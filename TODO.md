@@ -31,33 +31,33 @@ This document tracks the development progress of WhatToRead. Tasks are organized
 ## Phase 2: ETL Pipeline (Data Ingestion and Embedding)
 
 ### Data Acquisition
-- [ ] Download Open Library works dump
-- [ ] Set up data streaming for large files
-- [ ] Create data validation utilities
+- [x] Download Open Library works dump
+- [x] Set up data streaming for large files
+- [x] Create data validation utilities
 
 ### Data Processing
-- [ ] Implement quality filtering logic (`is_real_publisher`)
-  - [ ] Filter by subject count (minimum 3 subjects)
+- [x] Implement quality filtering logic (`is_real_publisher`)
+  - [x] Filter by subject count (minimum 3 subjects)
   - [ ] Filter by publisher quality (if applicable)
-- [ ] Implement data transformation
-  - [ ] Extract Open Library work keys
-  - [ ] Parse author information
-  - [ ] Extract publication year
-  - [ ] Combine fields for embedding context
-- [ ] Create `etl/ingest.py` script
-- [ ] Implement batch processing (1000 records per batch)
+- [x] Implement data transformation
+  - [x] Extract Open Library work keys
+  - [x] Parse author information
+  - [x] Extract publication year
+  - [x] Combine fields for embedding context
+- [x] Create `etl/ingest.py` script
+- [x] Implement batch processing (1000 records per batch)
 
 ### Embedding Generation
-- [ ] Install sentence-transformers library
-- [ ] Load `all-MiniLM-L6-v2` model
-- [ ] Implement batch embedding generation
+- [x] Install sentence-transformers library
+- [x] Load `all-MiniLM-L6-v2` model
+- [x] Implement batch embedding generation
 - [ ] Test embedding quality with sample queries
 
 ### Database Insertion
-- [ ] Implement batch insert using `executemany`
-- [ ] Add error handling and retry logic
-- [ ] Add progress tracking (tqdm)
-- [ ] Test with subset of data (100k records)
+- [x] Implement batch insert using `executemany`
+- [x] Add error handling and retry logic
+- [x] Add progress tracking (tqdm)
+- [ ] Test with subset of data (100k records) (in progress)
 
 ### Optimization
 - [ ] Optimize batch size for memory/performance
