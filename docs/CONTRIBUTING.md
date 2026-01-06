@@ -71,7 +71,7 @@ git clone https://github.com/ERJavier/what-to-read-next.git
 cd what-to-read-next
 
 # Add upstream remote
-git remote add upstream https://github.com/erjavier/what-to-read-next.git
+git remote add upstream https://github.com/ERJavier/what-to-read-next.git
 
 # Create virtual environment
 python -m venv venv
