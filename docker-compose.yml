@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+  # PostgreSQL with pgvector extension
+  whattoread-db:
+    image: pgvector/pgvector:pg15
+    container_name: whattoread-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-whattoread}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD environment variable is required}
+      POSTGRES_DB: ${POSTGRES_DB:-whattoread}
+    ports:
+      # Using 5433 to avoid conflict with pulso-db on 5432
+      - "5433:5432"
+    volumes:
+      # Project-specific volume name
+      - whattoread_postgres_data:/var/lib/postgresql/data
+      - ./scripts/init_db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - whattoread-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U whattoread"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # FastAPI Application
+  whattoread-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: whattoread-api
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-whattoread}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD environment variable is required}@whattoread-db:5432/${POSTGRES_DB:-whattoread}
+      API_HOST: 0.0.0.0
+      API_PORT: 8000
+      EMBEDDING_MODEL: all-MiniLM-L6-v2
+    ports:
+      # Using 8001 to avoid conflicts with other services
+      - "8001:8000"
+    volumes:
+      - ./api:/app/api
+      - ./etl:/app/etl
+      - ./scripts:/app/scripts
+      # Mount models directory if you want to persist downloaded models
+      - whattoread_models:/app/models
+    depends_on:
+      whattoread-db:
+        condition: service_healthy
+    networks:
+      - whattoread-network
+    restart: unless-stopped
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # ETL Service (for running data ingestion)
+  whattoread-etl:
+    build:
+      context: .
+      dockerfile: Dockerfile.etl
+    container_name: whattoread-etl
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-whattoread}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD environment variable is required}@whattoread-db:5432/${POSTGRES_DB:-whattoread}
+      EMBEDDING_MODEL: all-MiniLM-L6-v2
+    volumes:
+      - ./etl:/app/etl
+      - ./scripts:/app/scripts
+      - ./data:/app/data:ro  # Read-only mount for data dumps
+      - whattoread_models:/app/models
+    depends_on:
+      whattoread-db:
+        condition: service_healthy
+    networks:
+      - whattoread-network
+    profiles:
+      - etl  # Only start when explicitly requested
+    restart: "no"
+
+volumes:
+  # Project-specific volume names with prefix
+  whattoread_postgres_data:
+    name: whattoread_postgres_data
+  whattoread_models:
+    name: whattoread_models
+
+networks:
+  # Isolated network for this project only
+  whattoread-network:
+    name: whattoread-network
+    driver: bridge
+

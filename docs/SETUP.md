@@ -86,19 +86,48 @@ CREATE EXTENSION IF NOT EXISTS vector;
 
 ## Step 4: Configure Environment Variables
 
-Create a `.env` file in the project root:
+**IMPORTANT**: Environment variables are required for database passwords and other sensitive configuration. Never commit your `.env` file to git.
 
-```bash
-# Database Configuration
-DATABASE_URL=postgresql://user:password@localhost:5432/whattoread
+### Create .env File
 
-# API Configuration
-API_HOST=0.0.0.0
-API_PORT=8000
+1. **Copy the template**:
+   ```bash
+   cp env.template .env
+   ```
 
-# Model Configuration
-EMBEDDING_MODEL=all-MiniLM-L6-v2
-```
+2. **Edit `.env` and set your values**:
+   ```bash
+   # Open in your editor
+   nano .env
+   # or
+   code .env
+   ```
+
+3. **Required variables to set**:
+   - `POSTGRES_PASSWORD`: Set a strong password (required)
+   - `DATABASE_URL`: Will be auto-constructed from other variables, or set manually
+
+4. **Generate a secure password** (optional):
+   ```bash
+   # Using OpenSSL
+   openssl rand -base64 32
+   
+   # Or using Python
+   python -c "import secrets; print(secrets.token_urlsafe(32))"
+   ```
+
+### Environment Variables Reference
+
+The `.env` file should contain:
+- `POSTGRES_USER`: Database user (default: `whattoread`)
+- `POSTGRES_PASSWORD`: **REQUIRED** - Database password
+- `POSTGRES_DB`: Database name (default: `whattoread`)
+- `DATABASE_URL`: Full connection string (auto-constructed or manual)
+- `API_HOST`: API host (default: `0.0.0.0`)
+- `API_PORT`: API port (default: `8000`)
+- `EMBEDDING_MODEL`: ML model name (default: `all-MiniLM-L6-v2`)
+
+**Note**: The `.env` file is already in `.gitignore` and will not be committed to the repository.
 
 ## Step 5: Set Up Database Schema
 
