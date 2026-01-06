@@ -14,7 +14,7 @@ Before you begin, ensure you have the following installed:
 ## Step 1: Clone the Repository
 
 ```bash
-git clone https://github.com/erjavier/what-to-read-next.git
+git clone https://github.com/ERJavier/what-to-read-next.git
 cd what-to-read-next
 ```
 

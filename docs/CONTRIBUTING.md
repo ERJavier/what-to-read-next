@@ -13,7 +13,7 @@ Thank you for your interest in contributing to WhatToRead! This document provide
 
 ### Reporting Bugs
 
-1. Check if the bug has already been reported in [Issues](https://github.com/erjavier/what-to-read-next/issues)
+1. Check if the bug has already been reported in [Issues](https://github.com/ERJavier/what-to-read-next/issues)
 2. If not, create a new issue with:
    - Clear, descriptive title
    - Steps to reproduce
@@ -67,7 +67,7 @@ Quick start:
 
 ```bash
 # Clone your fork
-git clone https://github.com/erjavier/what-to-read-next.git
+git clone https://github.com/ERJavier/what-to-read-next.git
 cd what-to-read-next
 
 # Add upstream remote

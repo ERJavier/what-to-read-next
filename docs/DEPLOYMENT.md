@@ -32,7 +32,7 @@ This is the simplest deployment method for a single server.
 #### Step 1: Clone Repository
 
 ```bash
-git clone https://github.com/erjavier/what-to-read-next.git
+git clone https://github.com/ERJavier/what-to-read-next.git
 cd what-to-read-next
 ```
 

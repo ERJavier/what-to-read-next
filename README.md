@@ -36,7 +36,7 @@ For detailed setup instructions, see [docs/SETUP.md](docs/SETUP.md).
 
 ```bash
 # Clone the repository
-git clone https://github.com/erjavier/what-to-read-next.git
+git clone https://github.com/ERJavier/what-to-read-next.git
 cd what-to-read-next
 
 # Create virtual environment
