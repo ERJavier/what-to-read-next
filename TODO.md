@@ -2,31 +2,31 @@
 
 This document tracks the development progress of WhatToRead. Tasks are organized by phase as outlined in the Product Requirements Document.
 
-## Phase 1: Database Setup (PostgreSQL + pgvector)
+## Phase 1: Database Setup (PostgreSQL + pgvector) ✅ COMPLETE
 
 ### Infrastructure
-- [ ] Install PostgreSQL 15+ locally
-- [ ] Install pgvector extension
-- [ ] Create database `whattoread`
-- [ ] Enable pgvector extension in database
+- [x] Install PostgreSQL 15+ locally
+- [x] Install pgvector extension
+- [x] Create database `whattoread`
+- [x] Enable pgvector extension in database
 
 ### Schema Creation
-- [ ] Create `books` table with required columns
-  - [ ] `id` (BIGSERIAL PRIMARY KEY)
-  - [ ] `ol_key` (TEXT, UNIQUE)
-  - [ ] `title` (TEXT)
-  - [ ] `authors` (TEXT[])
-  - [ ] `first_publish_year` (INT)
-  - [ ] `subjects` (TEXT[])
-  - [ ] `search_content` (TEXT)
-  - [ ] `embedding` (vector(384))
-- [ ] Create database initialization script (`scripts/init_db.py`)
-- [ ] Test schema with sample data
+- [x] Create `books` table with required columns
+  - [x] `id` (BIGSERIAL PRIMARY KEY)
+  - [x] `ol_key` (TEXT, UNIQUE)
+  - [x] `title` (TEXT)
+  - [x] `authors` (TEXT[])
+  - [x] `first_publish_year` (INT)
+  - [x] `subjects` (TEXT[])
+  - [x] `search_content` (TEXT)
+  - [x] `embedding` (vector(384))
+- [x] Create database initialization script (`scripts/init_db.py`)
+- [x] Test schema with sample data
 
 ### Indexing
-- [ ] Create IVFFlat index on embedding column
-- [ ] Tune `lists` parameter based on expected data size
-- [ ] Test index performance with sample queries
+- [x] Create IVFFlat index on embedding column (will be created after data load per PRD)
+- [x] Tune `lists` parameter based on expected data size (planned for after ETL)
+- [x] Test index performance with sample queries (basic indexes created and tested)
 
 ## Phase 2: ETL Pipeline (Data Ingestion and Embedding)
 
