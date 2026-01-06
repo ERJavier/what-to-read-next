@@ -9,6 +9,7 @@ import sys
 import gzip
 import json
 import logging
+import time
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -23,9 +24,10 @@ DUMP_FILE = os.getenv(
 )
 DATABASE_URL = os.getenv("DATABASE_URL")
 MODEL_NAME = os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2")
-BATCH_SIZE = int(os.getenv("BATCH_SIZE", "1000"))
+BATCH_SIZE = int(os.getenv("BATCH_SIZE", "500"))  # Reduced default for lower memory usage
 MIN_SUBJECTS = int(os.getenv("MIN_SUBJECTS", "3"))
 MAX_RECORDS = int(os.getenv("MAX_RECORDS", "0"))  # 0 = no limit, process all
+BATCH_DELAY = float(os.getenv("BATCH_DELAY", "0.1"))  # Delay between batches (seconds) to reduce CPU load
 
 # Setup logging
 logging.basicConfig(
@@ -159,7 +161,8 @@ def main():
     logger.info("🚀 Starting ETL Pipeline")
     logger.info(f"   Dump file: {DUMP_FILE}")
     logger.info(f"   Model: {MODEL_NAME}")
-    logger.info(f"   Batch size: {BATCH_SIZE}")
+    logger.info(f"   Batch size: {BATCH_SIZE} (optimized for low resource usage)")
+    logger.info(f"   Batch delay: {BATCH_DELAY}s (CPU throttling)")
     logger.info(f"   Min subjects: {MIN_SUBJECTS}")
     if MAX_RECORDS > 0:
         logger.info(f"   Max records (test mode): {MAX_RECORDS:,}")
@@ -292,6 +295,10 @@ def main():
                     # Reset batch
                     batch_records = []
                     batch_texts = []
+                    
+                    # Gentle CPU throttling - small delay between batches
+                    if BATCH_DELAY > 0:
+                        time.sleep(BATCH_DELAY)
                     
                     # Check limit before continuing
                     if MAX_RECORDS > 0 and records_inserted >= MAX_RECORDS:

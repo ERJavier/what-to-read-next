@@ -57,11 +57,11 @@ This document tracks the development progress of WhatToRead. Tasks are organized
 - [x] Implement batch insert using `executemany`
 - [x] Add error handling and retry logic
 - [x] Add progress tracking (tqdm)
-- [ ] Test with subset of data (100k records) (in progress)
+- [x] Test with subset of data (100k records)
 
 ### Optimization
-- [ ] Optimize batch size for memory/performance
-- [ ] Add logging and monitoring
+- [x] Optimize batch size for memory/performance (reduced to 500, added CPU throttling)
+- [x] Add logging and monitoring (progress logging every 10k records)
 - [ ] Create index after full data load
 - [ ] Run full ETL on complete dataset
 
