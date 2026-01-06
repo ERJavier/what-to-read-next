@@ -24,10 +24,11 @@ DUMP_FILE = os.getenv(
 )
 DATABASE_URL = os.getenv("DATABASE_URL")
 MODEL_NAME = os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2")
-BATCH_SIZE = int(os.getenv("BATCH_SIZE", "500"))  # Reduced default for lower memory usage
+BATCH_SIZE = int(os.getenv("BATCH_SIZE", "250"))  # Conservative default for low memory usage
 MIN_SUBJECTS = int(os.getenv("MIN_SUBJECTS", "3"))
 MAX_RECORDS = int(os.getenv("MAX_RECORDS", "0"))  # 0 = no limit, process all
-BATCH_DELAY = float(os.getenv("BATCH_DELAY", "0.1"))  # Delay between batches (seconds) to reduce CPU load
+BATCH_DELAY = float(os.getenv("BATCH_DELAY", "0.2"))  # Delay between batches (seconds) to reduce CPU load
+EMBEDDING_BATCH_SIZE = int(os.getenv("EMBEDDING_BATCH_SIZE", "32"))  # Smaller embedding batches for lower memory
 
 # Setup logging
 logging.basicConfig(
@@ -162,6 +163,7 @@ def main():
     logger.info(f"   Dump file: {DUMP_FILE}")
     logger.info(f"   Model: {MODEL_NAME}")
     logger.info(f"   Batch size: {BATCH_SIZE} (optimized for low resource usage)")
+    logger.info(f"   Embedding batch size: {EMBEDDING_BATCH_SIZE} (memory-friendly)")
     logger.info(f"   Batch delay: {BATCH_DELAY}s (CPU throttling)")
     logger.info(f"   Min subjects: {MIN_SUBJECTS}")
     if MAX_RECORDS > 0:
@@ -246,8 +248,13 @@ def main():
                 # Process batch when full
                 if len(batch_records) >= BATCH_SIZE:
                     try:
-                        # Generate embeddings
-                        embeddings = model.encode(batch_texts, show_progress_bar=False)
+                        # Generate embeddings with smaller batch size for memory efficiency
+                        embeddings = model.encode(
+                            batch_texts, 
+                            show_progress_bar=False,
+                            batch_size=EMBEDDING_BATCH_SIZE,
+                            convert_to_numpy=True
+                        )
                         
                         # Prepare data for insertion
                         data_tuples = [
@@ -307,7 +314,12 @@ def main():
             # Process remaining records
             if batch_records:
                 try:
-                    embeddings = model.encode(batch_texts, show_progress_bar=False)
+                    embeddings = model.encode(
+                        batch_texts, 
+                        show_progress_bar=False,
+                        batch_size=EMBEDDING_BATCH_SIZE,
+                        convert_to_numpy=True
+                    )
                     data_tuples = [
                         (
                             r["ol_key"],
