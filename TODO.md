@@ -60,10 +60,10 @@ This document tracks the development progress of WhatToRead. Tasks are organized
 - [x] Test with subset of data (100k records)
 
 ### Optimization
-- [x] Optimize batch size for memory/performance (reduced to 500, added CPU throttling)
+- [x] Optimize batch size for memory/performance (reduced to 250, added CPU throttling)
 - [x] Add logging and monitoring (progress logging every 10k records)
-- [ ] Create index after full data load
-- [ ] Run full ETL on complete dataset
+- [x] Create index after full data load (IVFFlat index created with lists=100)
+- [x] Run full ETL on complete dataset (completed: 8,197,000 records inserted)
 
 ## Phase 3: API Development (FastAPI Backend)
 
