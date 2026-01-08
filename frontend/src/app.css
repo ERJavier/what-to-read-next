@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+	body {
+		@apply bg-academia-dark text-academia-cream font-sans;
+	}
+}
+
+@layer components {
+	.card {
+		@apply bg-academia-light rounded-lg shadow-lg p-6 border border-academia-lighter;
+	}
+	
+	.btn {
+		@apply px-4 py-2 rounded-md font-medium transition-colors;
+	}
+	
+	.btn-primary {
+		@apply bg-academia-accent text-white hover:bg-academia-gold;
+	}
+	
+	.btn-secondary {
+		@apply bg-academia-lighter text-academia-cream hover:bg-academia-light;
+	}
+	
+	.input {
+		@apply w-full px-4 py-2 bg-academia-light border border-academia-lighter rounded-md text-academia-cream placeholder-academia-accent focus:outline-none focus:ring-2 focus:ring-academia-gold;
+	}
+}

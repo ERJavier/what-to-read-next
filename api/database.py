@@ -31,6 +31,9 @@ async def init_db_pool() -> None:
             min_size=settings.database_pool_min_size,
             max_size=settings.database_pool_max_size,
             open=True,
+            timeout=5.0,  # Timeout for getting a connection from pool
+            max_waiting=10,  # Max number of requests waiting for a connection
+            max_idle=300,  # Close idle connections after 5 minutes
         )
         logger.info(
             f"Database connection pool initialized "
@@ -67,10 +70,25 @@ async def get_db_connection() -> AsyncGenerator[psycopg.Connection, None]:
         raise RuntimeError("Database pool not initialized. Call init_db_pool() first.")
     
     # Get connection from pool (sync operation in thread)
-    conn = await asyncio.to_thread(_pool.getconn)
+    # Use getconn with timeout handling via asyncio.wait_for
+    try:
+        conn = await asyncio.wait_for(
+            asyncio.to_thread(_pool.getconn),
+            timeout=10.0
+        )
+    except asyncio.TimeoutError:
+        logger.error("Timeout waiting for database connection from pool")
+        raise RuntimeError("Could not get database connection: timeout after 10 seconds")
+    except Exception as e:
+        logger.error(f"Failed to get database connection from pool: {e}")
+        raise RuntimeError(f"Could not get database connection: {e}") from e
+    
     try:
         yield conn
     finally:
         # Return connection to pool
-        await asyncio.to_thread(_pool.putconn, conn)
+        try:
+            await asyncio.to_thread(_pool.putconn, conn)
+        except Exception as e:
+            logger.warning(f"Error returning connection to pool: {e}")
 
