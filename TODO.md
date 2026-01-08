@@ -108,47 +108,50 @@ This document tracks the development progress of WhatToRead. Tasks are organized
 - [x] Test error cases (error handlers implemented)
 - [ ] Performance testing (deferred to Phase 5)
 
-## Phase 4: Frontend Development (React/Vite Interface)
+## Phase 4: Frontend Development (SvelteKit Interface)
 
 ### Project Setup
-- [ ] Initialize React + Vite project
-- [ ] Set up project structure
-- [ ] Configure build tools
-- [ ] Set up state management (TanStack Query)
+- [ ] Initialize SvelteKit project (npm create svelte@latest)
+- [ ] Select Skeleton project (No specific UI library yet)
+- [ ] Add TypeScript support (Recommended for senior dev safety)
+- [ ] Install node-fetch or native fetch utilities (for API proxying)
+- [ ] Install Svelte Motion (for physics-based animations/swiping)
 
 ### UI Components
-- [ ] Design and implement book card component
-- [ ] Create "Tinder-for-Books" swipe interface
-- [ ] Implement search/query input
-- [ ] Create results display
-- [ ] Add loading states
-- [ ] Add error handling UI
+- [ ] Design and implement BookCard.svelte component
+- [ ] Create "Tinder-for-Books" swipe stack container
+- [ ] Implement Search/Query input bar (debounced input)
+- [ ] Create ResultsGrid.svelte (Masonry layout)
+- [ ] Add global loading spinners (using Svelte slots)
+- [ ] Add error boundary UI (Svelte +error pages)
 
 ### API Integration
-- [ ] Set up API client
-- [ ] Implement recommendation fetching
+- [ ] Configure hooks.server.js to proxy /api requests to FastAPI backend
+- [ ] Create Server Load Functions (+page.server.js) for initial data fetching
+- [ ] Implement recommendation fetching logic (SSR)
 - [ ] Implement book detail fetching
-- [ ] Add error handling
-- [ ] Implement caching with TanStack Query
-
+- [ ] Handle CORS/Headers via server hooks
+     
 ### Interactive Features
-- [ ] Implement swipe gestures (like/dislike)
-- [ ] Implement vector interpolation logic
-- [ ] Add real-time recommendation updates
-- [ ] Create taste profile visualization
-- [ ] Add filters (genre, year, etc.)
+- [ ] Implement Swipe Gestures using svelte/motion (Pan/Move logic)
+- [ ] Implement "Vector Interpolation" logic (Updating query params on swipe)
+- [ ] Add real-time list updates (Svelte reactive statements $:)
+- [ ] Create "Taste Profile" visualization (Visualizing the slider positions)
+- [ ] Add metadata filters (Genre, Decade) - Optional
 
-### Styling
-- [ ] Design responsive layout
-- [ ] Implement modern UI/UX
-- [ ] Add animations and transitions
-- [ ] Ensure mobile compatibility
+### Styling & Theming
+- [ ] Choose CSS approach: TailwindCSS (Fastest) or SCSS Modules
+- [ ] Design responsive layout (Mobile-first for swipe, Desktop for Grid)
+- [ ] Implement "Dark Academia" or "Clean Minimalist" theme
+- [ ] Add Animations (Page transitions + Card flips)
+- [ ] Ensure touch compatibility (Mobile swipe physics)
 
-### Testing
-- [ ] Write component tests
-- [ ] Test user interactions
-- [ ] Test API integration
-- [ ] Cross-browser testing
+### Testing & Quality 
+- [ ] Write component unit tests (using Vitest + Testing Library)
+- [ ] Test user interactions (Swipe left/right triggers correct API calls)
+- [ ] Test API integration (Mock FastAPI responses)
+- [ ] Performance check (Lighthouse score > 90)
+- [ ] Cross-browser testing (Safari/Chrome/Firefox)
 
 ## Phase 5: Deployment & Optimization
 
