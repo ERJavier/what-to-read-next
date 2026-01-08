@@ -168,6 +168,8 @@ This will:
 
 **Note:** This process can take several hours for the full dataset. Start with a subset for testing.
 
+For detailed ETL documentation, including configuration options, performance tuning, and troubleshooting, see [ETL Pipeline Documentation](ETL.md).
+
 ## Step 8: Start the API Server
 
 ```bash

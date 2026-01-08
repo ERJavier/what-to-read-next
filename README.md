@@ -50,6 +50,7 @@ pip install -r requirements.txt
 ## Documentation
 
 - [Setup Guide](docs/SETUP.md) - Detailed setup instructions for development environment
+- [ETL Pipeline](docs/ETL.md) - Complete ETL pipeline documentation with configuration and performance metrics
 - [Architecture](docs/ARCHITECTURE.md) - System architecture and data flow documentation
 - [API Documentation](docs/API.md) - API endpoints and usage
 - [Deployment Guide](docs/DEPLOYMENT.md) - Production deployment instructions
