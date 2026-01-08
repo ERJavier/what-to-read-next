@@ -42,7 +42,7 @@ class Settings(BaseSettings):
     log_file: Optional[str] = None
     
     # Similarity search
-    similarity_threshold: float = 0.2  # Cosine distance threshold (lower = more strict)
+    similarity_threshold: float = 0.4  # Cosine distance threshold (lower = more strict, 0.4 = ~0.6 similarity)
     max_recommendations: int = 100
     
     model_config = SettingsConfigDict(
