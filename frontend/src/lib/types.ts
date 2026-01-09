@@ -43,3 +43,16 @@ export interface SearchHistoryEntry {
 	firstSearched: string; // ISO timestamp
 	lastSearched: string; // ISO timestamp
 }
+
+export type SortOption = 'similarity' | 'year' | 'title';
+export type SortDirection = 'asc' | 'desc';
+
+export interface FilterPreferences {
+	selectedSubjects: string[];
+	yearRange: {
+		min: number | null;
+		max: number | null;
+	};
+	sortBy: SortOption;
+	sortDirection: SortDirection;
+}

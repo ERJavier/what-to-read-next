@@ -1,19 +1,22 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import type { Book, SearchHistoryEntry } from '$lib/types';
+	import type { Book, SearchHistoryEntry, FilterPreferences } from '$lib/types';
 	import { getRecommendations } from '$lib/api';
 	import { saveBook } from '$lib/storage';
 	import { getSearchHistory, addSearchToHistory } from '$lib/searchHistory';
+	import { getFilterPreferences, saveFilterPreferences } from '$lib/filterPreferences';
+	import { applyFiltersAndSort } from '$lib/filterUtils';
 	import SearchBar from '$lib/components/SearchBar.svelte';
 	import SwipeStack from '$lib/components/SwipeStack.svelte';
 	import ResultsGrid from '$lib/components/ResultsGrid.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 	import ErrorBoundary from '$lib/components/ErrorBoundary.svelte';
 	import TasteProfile from '$lib/components/TasteProfile.svelte';
+	import FilterBar from '$lib/components/FilterBar.svelte';
 
 	let searchQuery = $state('');
-	let books = $state<Book[]>([]);
+	let allBooks = $state<Book[]>([]); // Store all books before filtering
 	let loading = $state(false);
 	let loadingMore = $state(false);
 	let error = $state<Error | null>(null);
@@ -23,8 +26,12 @@
 	let currentLimit = $state(20);
 	let hasMoreResults = $state(false);
 	let showBackToTop = $state(false);
+	let filterPreferences = $state<FilterPreferences>(getFilterPreferences());
 	const INITIAL_LIMIT = 20;
 	const LOAD_MORE_INCREMENT = 20;
+
+	// Apply filters and sorting to books
+	let books = $derived(applyFiltersAndSort(allBooks, filterPreferences));
 
 	function loadSearchHistory() {
 		searchHistory = getSearchHistory();
@@ -32,6 +39,9 @@
 
 	onMount(() => {
 		loadSearchHistory();
+		// Load filter preferences
+		filterPreferences = getFilterPreferences();
+		
 		// Listen for storage changes to update the list when history changes elsewhere
 		const handleStorageChange = () => {
 			loadSearchHistory();
@@ -72,7 +82,7 @@
 		
 		try {
 			const results = await getRecommendations({ query, limit: INITIAL_LIMIT });
-			books = results;
+			allBooks = results; // Store all books, filtering will be applied reactively
 			
 			// Check if there might be more results (if we got exactly the requested amount)
 			hasMoreResults = results.length === INITIAL_LIMIT;
@@ -85,7 +95,7 @@
 			showBackToTop = false;
 		} catch (e) {
 			error = e instanceof Error ? e : new Error('Failed to search');
-			books = [];
+			allBooks = [];
 			hasMoreResults = false;
 		} finally {
 			loading = false;
@@ -101,10 +111,10 @@
 			const newResults = await getRecommendations({ query: searchQuery, limit: newLimit });
 			
 			// Deduplicate by book ID (in case API returns duplicates)
-			const existingIds = new Set(books.map((b) => b.id));
+			const existingIds = new Set(allBooks.map((b) => b.id));
 			const additionalBooks = newResults.filter((b) => !existingIds.has(b.id));
 			
-			books = [...books, ...additionalBooks];
+			allBooks = [...allBooks, ...additionalBooks];
 			currentLimit = newLimit;
 			
 			// Check if there might be more results
@@ -133,6 +143,11 @@
 	function handleBookClick(book: Book) {
 		// Navigate to book detail page
 		goto(`/books/${book.id}`);
+	}
+
+	function handleFilterPreferencesChange(newPreferences: FilterPreferences) {
+		filterPreferences = newPreferences;
+		saveFilterPreferences(newPreferences);
 	}
 </script>
 
@@ -167,7 +182,7 @@
 		<button class="btn btn-secondary" onclick={() => goto('/saved')}>
 			Saved Books
 		</button>
-		{#if books.length > 0}
+		{#if allBooks.length > 0}
 			<button
 				class="btn {paginationMode === 'load-more' ? 'btn-primary' : 'btn-secondary'}"
 				onclick={() => paginationMode = 'load-more'}
@@ -196,7 +211,7 @@
 			<h2 class="text-xl font-bold text-red-400 mb-2">Error</h2>
 			<p class="text-red-300">{error.message}</p>
 		</div>
-	{:else if books.length > 0}
+	{:else if allBooks.length > 0}
 		<div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
 			<div class="lg:col-span-1">
 				<TasteProfile 
@@ -205,6 +220,21 @@
 				/>
 			</div>
 			<div class="lg:col-span-3">
+				<FilterBar
+					books={allBooks}
+					preferences={filterPreferences}
+					onPreferencesChange={handleFilterPreferencesChange}
+				/>
+				{#if books.length === 0}
+					<div class="card text-center py-8">
+						<p class="text-academia-cream/60 text-lg mb-2">
+							No books match your current filters.
+						</p>
+						<p class="text-academia-cream/40 text-sm">
+							Try adjusting your filter criteria.
+						</p>
+					</div>
+				{:else}
 				{#if viewMode === 'swipe'}
 					<SwipeStack
 						{books}
@@ -245,6 +275,7 @@
 							{/if}
 						{/if}
 					</div>
+				{/if}
 				{/if}
 			</div>
 		</div>
