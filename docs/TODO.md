@@ -53,12 +53,12 @@ This document tracks improvements and enhancements for the WhatToRead frontend a
 - [x] Ensure shortcuts don't conflict with browser defaults
 
 ### 7. Enhanced Taste Profile
-- [ ] Create visual chart/graph of search patterns
-- [ ] Add recommendations based on taste profile
-- [ ] Implement taste profile export (JSON/CSV)
-- [ ] Add share functionality for taste profile
-- [ ] Show statistics (total searches, favorite genres, etc.)
-- [ ] Add taste profile insights/suggestions
+- [x] Create visual chart/graph of search patterns
+- [x] Add recommendations based on taste profile
+- [x] Implement taste profile export (JSON/CSV)
+- [x] Add share functionality for taste profile
+- [x] Show statistics (total searches, favorite genres, etc.)
+- [x] Add taste profile insights/suggestions
 
 ### 8. Performance Optimizations
 - [ ] Implement image lazy loading (if adding book covers)
