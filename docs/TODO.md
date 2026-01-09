@@ -37,20 +37,20 @@ This document tracks improvements and enhancements for the WhatToRead frontend a
 ## Medium Priority Improvements
 
 ### 5. Filters and Sorting
-- [ ] Add genre/subject filter dropdown
-- [ ] Implement decade/year range filter
-- [ ] Add sorting options (similarity, year, title)
-- [ ] Create filter UI component
-- [ ] Persist filter preferences
-- [ ] Show active filters with ability to clear
+- [x] Add genre/subject filter dropdown
+- [x] Implement decade/year range filter
+- [x] Add sorting options (similarity, year, title)
+- [x] Create filter UI component
+- [x] Persist filter preferences
+- [x] Show active filters with ability to clear
 
 ### 6. Keyboard Shortcuts
-- [ ] Implement arrow keys for swiping (left/right)
-- [ ] Add `/` key to focus search bar
+- [x] Implement arrow keys for swiping (left/right)
+- [x] Add `/` key to focus search bar
 - [x] Add `Esc` key to close modals/detail views (implemented in BookDetailModal)
-- [ ] Add `?` key to show keyboard shortcuts help
-- [ ] Create keyboard shortcuts help modal
-- [ ] Ensure shortcuts don't conflict with browser defaults
+- [x] Add `?` key to show keyboard shortcuts help
+- [x] Create keyboard shortcuts help modal
+- [x] Ensure shortcuts don't conflict with browser defaults
 
 ### 7. Enhanced Taste Profile
 - [ ] Create visual chart/graph of search patterns
