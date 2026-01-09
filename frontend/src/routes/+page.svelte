@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 	import type { Book } from '$lib/types';
 	import { getRecommendations } from '$lib/api';
 	import SearchBar from '$lib/components/SearchBar.svelte';
@@ -15,7 +15,6 @@
 	let error = $state<Error | null>(null);
 	let viewMode = $state<'swipe' | 'grid'>('swipe');
 	let tasteQueries = $state<string[]>([]);
-	let selectedBook = $state<Book | null>(null);
 
 	async function handleSearch(query: string) {
 		if (!query.trim()) return;
@@ -51,9 +50,8 @@
 	}
 
 	function handleBookClick(book: Book) {
-		selectedBook = book;
-		// Could navigate to detail page or show modal
-		console.log('Clicked book:', book);
+		// Navigate to book detail page
+		goto(`/books/${book.id}`);
 	}
 </script>
 
@@ -87,7 +85,9 @@
 		</button>
 	</div>
 
-	<ErrorBoundary {error} />
+	{#if error}
+		<ErrorBoundary error={error} />
+	{/if}
 
 	{#if loading}
 		<Loading message="Finding your perfect books..." />
