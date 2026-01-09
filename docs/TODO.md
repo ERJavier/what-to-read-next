@@ -28,11 +28,11 @@ This document tracks improvements and enhancements for the WhatToRead frontend a
 - [x] Show search count and last searched date
 
 ### 4. Pagination/Infinite Scroll
-- [ ] Implement "Load More" button for results
-- [ ] Add infinite scroll option
-- [ ] Track current page/offset
-- [ ] Handle loading states for pagination
-- [ ] Add "Back to Top" button for long lists
+- [x] Implement "Load More" button for results
+- [x] Add infinite scroll option
+- [x] Track current page/offset
+- [x] Handle loading states for pagination
+- [x] Add "Back to Top" button for long lists
 
 ## Medium Priority Improvements
 
@@ -158,9 +158,9 @@ This document tracks improvements and enhancements for the WhatToRead frontend a
 ## Progress Tracking
 
 - **Total Items**: 100+
-- **Completed**: 17
+- **Completed**: 22
 - **In Progress**: 0
-- **Not Started**: 83+
+- **Not Started**: 78+
 
 Last updated: 2025-01-27
 
@@ -227,3 +227,29 @@ Last updated: 2025-01-27
 - ✅ Added "Clear History" button with confirmation dialog
 - ✅ Added individual query removal with hover-to-reveal delete button (✕)
 - ✅ Real-time updates when history changes (storage event listener)
+
+### 2025-01-27 - Pagination/Infinite Scroll Implementation ✅ COMPLETE
+- ✅ Implemented "Load More" button mode for manual pagination:
+  * Shows "Load More" button when there are more results
+  * Loads additional 20 books per click
+  * Displays "No more results to load" when all results are shown
+  * Separate loading state for pagination (doesn't block UI)
+- ✅ Implemented infinite scroll option:
+  * Automatically loads more books when scrolling near bottom (200px threshold)
+  * Shows loading indicator while fetching more results
+  * Displays end-of-results message when all books are loaded
+  * Mode toggle between "Load More" and "Auto Scroll" modes
+- ✅ Pagination state tracking:
+  * Tracks current limit (starts at 20, increments by 20)
+  * Tracks whether more results are available
+  * Deduplicates results by book ID to prevent duplicates
+  * Resets pagination state on new search
+- ✅ Loading states:
+  * Separate `loadingMore` state for pagination (doesn't interfere with initial search)
+  * Loading indicator shows "Loading more books..." in infinite scroll mode
+  * Button shows "Loading..." text and is disabled during load
+- ✅ Back to Top button:
+  * Appears when scrolled down more than 400px
+  * Fixed position in bottom-right corner
+  * Smooth scroll animation to top
+  * Only visible in grid view mode when there are results
