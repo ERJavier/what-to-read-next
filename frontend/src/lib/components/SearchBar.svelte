@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+
 	interface Props {
 		value?: string;
 		onSearch?: (query: string) => void;
@@ -8,6 +10,12 @@
 	let { value = $bindable(''), onSearch, placeholder = 'Search for books...' }: Props = $props();
 	
 	let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+	let searchInput: HTMLInputElement | null = $state(null);
+
+	// Expose focus method
+	export function focus() {
+		searchInput?.focus();
+	}
 
 	function handleInput(e: Event) {
 		const target = e.target as HTMLInputElement;
@@ -38,6 +46,7 @@
 <form onsubmit={handleSubmit} class="w-full max-w-2xl mx-auto">
 	<div class="relative">
 		<input
+			bind:this={searchInput}
 			type="text"
 			class="input pr-12"
 			placeholder={placeholder}

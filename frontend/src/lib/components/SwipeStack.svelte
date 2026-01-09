@@ -27,6 +27,21 @@
 			currentIndex++;
 		}
 	}
+
+	// Expose methods for keyboard shortcuts
+	export function swipeLeft() {
+		if (currentIndex < books.length && visibleBooks.length > 0) {
+			const currentBook = visibleBooks[0];
+			handleSwipeLeft(currentBook);
+		}
+	}
+
+	export function swipeRight() {
+		if (currentIndex < books.length && visibleBooks.length > 0) {
+			const currentBook = visibleBooks[0];
+			handleSwipeRight(currentBook);
+		}
+	}
 </script>
 
 <div class="relative w-full max-w-md mx-auto h-[600px]">

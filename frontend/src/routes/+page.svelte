@@ -14,6 +14,7 @@
 	import ErrorBoundary from '$lib/components/ErrorBoundary.svelte';
 	import TasteProfile from '$lib/components/TasteProfile.svelte';
 	import FilterBar from '$lib/components/FilterBar.svelte';
+	import KeyboardShortcutsModal from '$lib/components/KeyboardShortcutsModal.svelte';
 
 	let searchQuery = $state('');
 	let allBooks = $state<Book[]>([]); // Store all books before filtering
@@ -27,6 +28,9 @@
 	let hasMoreResults = $state(false);
 	let showBackToTop = $state(false);
 	let filterPreferences = $state<FilterPreferences>(getFilterPreferences());
+	let showShortcutsModal = $state(false);
+	let searchBarRef: any = $state(null);
+	let swipeStackRef: any = $state(null);
 	const INITIAL_LIMIT = 20;
 	const LOAD_MORE_INCREMENT = 20;
 
@@ -66,9 +70,13 @@
 		
 		window.addEventListener('scroll', handleScroll);
 		
+		// Handle keyboard shortcuts
+		window.addEventListener('keydown', handleKeyboardShortcuts);
+		
 		return () => {
 			window.removeEventListener('storage', handleStorageChange);
 			window.removeEventListener('scroll', handleScroll);
+			window.removeEventListener('keydown', handleKeyboardShortcuts);
 		};
 	});
 
@@ -149,6 +157,45 @@
 		filterPreferences = newPreferences;
 		saveFilterPreferences(newPreferences);
 	}
+
+	function handleKeyboardShortcuts(e: KeyboardEvent) {
+		// Don't trigger shortcuts when typing in inputs, textareas, or contenteditable elements
+		const target = e.target as HTMLElement;
+		const isInput = target.tagName === 'INPUT' || 
+		                target.tagName === 'TEXTAREA' || 
+		                target.isContentEditable;
+		
+		if (isInput) return;
+
+		// Handle '/' key to focus search bar
+		if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+			e.preventDefault();
+			searchBarRef?.focus();
+			return;
+		}
+
+		// Handle '?' key to show shortcuts help (Shift + /)
+		if (e.key === '?' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+			e.preventDefault();
+			showShortcutsModal = true;
+			return;
+		}
+
+		// Handle arrow keys for swiping (only in swipe mode with books available)
+		if (viewMode === 'swipe' && books.length > 0) {
+			if (e.key === 'ArrowLeft' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+				e.preventDefault();
+				swipeStackRef?.swipeLeft();
+				return;
+			}
+			
+			if (e.key === 'ArrowRight' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+				e.preventDefault();
+				swipeStackRef?.swipeRight();
+				return;
+			}
+		}
+	}
 </script>
 
 <svelte:head>
@@ -163,7 +210,7 @@
 		<p class="text-academia-cream/80 text-lg mb-6">
 			Discover your next favorite book through semantic search
 		</p>
-		<SearchBar onSearch={handleSearch} />
+		<SearchBar bind:this={searchBarRef} onSearch={handleSearch} />
 	</header>
 
 	<div class="flex gap-4 mb-6 justify-center flex-wrap">
@@ -237,6 +284,7 @@
 				{:else}
 				{#if viewMode === 'swipe'}
 					<SwipeStack
+						bind:this={swipeStackRef}
 						{books}
 						onSwipeLeft={handleSwipeLeft}
 						onSwipeRight={handleSwipeRight}
@@ -306,4 +354,10 @@
 			↑
 		</button>
 	{/if}
+
+	<!-- Keyboard Shortcuts Modal -->
+	<KeyboardShortcutsModal
+		open={showShortcutsModal}
+		onClose={() => showShortcutsModal = false}
+	/>
 </div>
