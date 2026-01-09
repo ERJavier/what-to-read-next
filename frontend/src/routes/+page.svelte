@@ -1,7 +1,10 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import type { Book } from '$lib/types';
+	import type { Book, SearchHistoryEntry } from '$lib/types';
 	import { getRecommendations } from '$lib/api';
+	import { saveBook } from '$lib/storage';
+	import { getSearchHistory, addSearchToHistory } from '$lib/searchHistory';
 	import SearchBar from '$lib/components/SearchBar.svelte';
 	import SwipeStack from '$lib/components/SwipeStack.svelte';
 	import ResultsGrid from '$lib/components/ResultsGrid.svelte';
@@ -14,7 +17,23 @@
 	let loading = $state(false);
 	let error = $state<Error | null>(null);
 	let viewMode = $state<'swipe' | 'grid'>('swipe');
-	let tasteQueries = $state<string[]>([]);
+	let searchHistory = $state<SearchHistoryEntry[]>([]);
+
+	function loadSearchHistory() {
+		searchHistory = getSearchHistory();
+	}
+
+	onMount(() => {
+		loadSearchHistory();
+		// Listen for storage changes to update the list when history changes elsewhere
+		const handleStorageChange = () => {
+			loadSearchHistory();
+		};
+		window.addEventListener('storage', handleStorageChange);
+		return () => {
+			window.removeEventListener('storage', handleStorageChange);
+		};
+	});
 
 	async function handleSearch(query: string) {
 		if (!query.trim()) return;
@@ -27,10 +46,9 @@
 			const results = await getRecommendations({ query, limit: 20 });
 			books = results;
 			
-			// Add to taste profile if not already present
-			if (!tasteQueries.includes(query)) {
-				tasteQueries = [...tasteQueries, query];
-			}
+			// Add to search history
+			addSearchToHistory(query);
+			loadSearchHistory();
 		} catch (e) {
 			error = e instanceof Error ? e : new Error('Failed to search');
 			books = [];
@@ -41,12 +59,12 @@
 
 	function handleSwipeLeft(book: Book) {
 		console.log('Swiped left on:', book.title);
-		// Could implement "not interested" logic here
+		saveBook(book, 'not_interested');
 	}
 
 	function handleSwipeRight(book: Book) {
 		console.log('Swiped right on:', book.title);
-		// Could implement "interested" logic here
+		saveBook(book, 'interested');
 	}
 
 	function handleBookClick(book: Book) {
@@ -70,7 +88,7 @@
 		<SearchBar onSearch={handleSearch} />
 	</header>
 
-	<div class="flex gap-4 mb-6 justify-center">
+	<div class="flex gap-4 mb-6 justify-center flex-wrap">
 		<button
 			class="btn {viewMode === 'swipe' ? 'btn-primary' : 'btn-secondary'}"
 			onclick={() => viewMode = 'swipe'}
@@ -82,6 +100,9 @@
 			onclick={() => viewMode = 'grid'}
 		>
 			Grid
+		</button>
+		<button class="btn btn-secondary" onclick={() => goto('/saved')}>
+			Saved Books
 		</button>
 	</div>
 
@@ -99,7 +120,10 @@
 	{:else if books.length > 0}
 		<div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
 			<div class="lg:col-span-1">
-				<TasteProfile queries={tasteQueries} />
+				<TasteProfile 
+					history={searchHistory} 
+					onHistoryChange={loadSearchHistory}
+				/>
 			</div>
 			<div class="lg:col-span-3">
 				{#if viewMode === 'swipe'}

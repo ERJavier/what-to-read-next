@@ -23,3 +23,23 @@ export interface HealthResponse {
 	service: string;
 	version: string;
 }
+
+export type SavedBookStatus = 'interested' | 'not_interested';
+
+export interface SavedBook {
+	book: Book;
+	status: SavedBookStatus;
+	savedAt: string; // ISO timestamp
+}
+
+export interface SavedBooksData {
+	interested: SavedBook[];
+	not_interested: SavedBook[];
+}
+
+export interface SearchHistoryEntry {
+	query: string;
+	count: number;
+	firstSearched: string; // ISO timestamp
+	lastSearched: string; // ISO timestamp
+}

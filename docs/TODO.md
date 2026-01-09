@@ -13,19 +13,19 @@ This document tracks improvements and enhancements for the WhatToRead frontend a
 - [x] Show related/recommended books on detail page
 
 ### 2. Persist Swipe Actions
-- [ ] Create data structure for saved books (interested/not interested)
-- [ ] Implement localStorage persistence for swipe actions
-- [ ] Add "Saved Books" view/page
-- [ ] Show saved books list with filtering
-- [ ] Add ability to remove books from saved list
+- [x] Create data structure for saved books (interested/not interested)
+- [x] Implement localStorage persistence for swipe actions
+- [x] Add "Saved Books" view/page
+- [x] Show saved books list with filtering
+- [x] Add ability to remove books from saved list
 - [ ] Consider backend API endpoint for syncing saved books (future)
 
 ### 3. Search History Persistence
-- [ ] Save taste profile to localStorage
-- [ ] Restore taste profile on page load
-- [ ] Add "Clear History" functionality
-- [ ] Add ability to remove individual queries from history
-- [ ] Show search count and last searched date
+- [x] Save taste profile to localStorage
+- [x] Restore taste profile on page load
+- [x] Add "Clear History" functionality
+- [x] Add ability to remove individual queries from history
+- [x] Show search count and last searched date
 
 ### 4. Pagination/Infinite Scroll
 - [ ] Implement "Load More" button for results
@@ -158,9 +158,9 @@ This document tracks improvements and enhancements for the WhatToRead frontend a
 ## Progress Tracking
 
 - **Total Items**: 100+
-- **Completed**: 7
+- **Completed**: 17
 - **In Progress**: 0
-- **Not Started**: 93+
+- **Not Started**: 83+
 
 Last updated: 2025-01-27
 
@@ -186,3 +186,44 @@ Last updated: 2025-01-27
   - Implemented in both detail page and modal
 - ✅ Error handling and loading states
 - ✅ Esc key support in modal (partial keyboard shortcuts implementation)
+
+### 2025-01-27 - Persist Swipe Actions Implementation ✅ COMPLETE
+- ✅ Created data structures for saved books (interested/not_interested) in types.ts
+- ✅ Implemented localStorage utility (`storage.ts`) for persisting saved books:
+  - Save books with status (interested/not_interested)
+  - Retrieve saved books as arrays or objects
+  - Remove individual books or clear all
+  - Get book status and check if book is saved
+- ✅ Updated swipe handlers in home page to save books on swipe
+  - Swipe right → saves as "interested"
+  - Swipe left → saves as "not_interested"
+- ✅ Created Saved Books page at `/saved` route:
+  - Display all saved books in a grid layout
+  - Filter by status (All, Interested, Not Interested)
+  - Show book count for each category
+  - Display saved date for each book
+  - Visual status indicators (badges)
+- ✅ Implemented filtering functionality:
+  - Filter buttons to show All, Interested, or Not Interested books
+  - Real-time count updates for each category
+- ✅ Added remove functionality:
+  - Remove individual books from saved list
+  - Clear all saved books with confirmation
+- ✅ Added navigation link to Saved Books page from home page
+- ✅ Storage change listener for real-time updates across tabs
+
+### 2025-01-27 - Search History Persistence Implementation ✅ COMPLETE
+- ✅ Created data structure for search history entries with query, count, firstSearched, and lastSearched timestamps
+- ✅ Implemented localStorage utility (`searchHistory.ts`) for persisting search history:
+  - Add/update search queries with automatic count tracking
+  - Get search history as full entries or just query strings
+  - Remove individual queries or clear all history
+- ✅ Updated search handler in home page to save searches to history automatically
+- ✅ Implemented search history restoration on page load using `onMount`
+- ✅ Enhanced TasteProfile component to display detailed search information:
+  - Shows search count for queries searched multiple times
+  - Displays last searched date with smart formatting (Today, Yesterday, X days ago, or date)
+  - Shows total searches and unique query count
+- ✅ Added "Clear History" button with confirmation dialog
+- ✅ Added individual query removal with hover-to-reveal delete button (✕)
+- ✅ Real-time updates when history changes (storage event listener)
