@@ -205,11 +205,21 @@
 			{#if loading}
 				<Loading message="Loading book details..." />
 			{:else if error}
-				<div class="card bg-red-900/20 border-red-500">
-					<h2 class="text-xl font-bold text-red-400 mb-2">Error</h2>
-					<p class="text-red-300 mb-4">{error.message}</p>
+				<ErrorBoundary error={error} showSuggestions={true} />
+				<div class="mt-4 flex gap-3">
 					<button onclick={onClose} class="btn btn-secondary">
 						Close
+					</button>
+					<button
+						onclick={() => {
+							error = null;
+							if (bookId) {
+								loadBookDetail(bookId);
+							}
+						}}
+						class="btn btn-primary"
+					>
+						Retry
 					</button>
 				</div>
 			{:else if book}
