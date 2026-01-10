@@ -43,21 +43,31 @@
 	}
 </script>
 
-<form onsubmit={handleSubmit} class="w-full max-w-2xl mx-auto">
+<form onsubmit={handleSubmit} class="w-full max-w-2xl mx-auto" role="search" aria-label="Book search">
 	<div class="relative">
+		<label for="search-input" class="sr-only">
+			Search for books
+		</label>
 		<input
+			id="search-input"
 			bind:this={searchInput}
 			type="text"
 			class="input pr-12"
 			placeholder={placeholder}
 			value={value}
 			oninput={handleInput}
+			aria-label="Search for books"
+			aria-describedby="search-hint"
 		/>
 		<button
 			type="submit"
 			class="absolute right-2 top-1/2 -translate-y-1/2 btn btn-primary"
+			aria-label="Submit search"
 		>
 			Search
 		</button>
 	</div>
+	<span id="search-hint" class="sr-only">
+		Enter keywords, genres, or descriptions to find books
+	</span>
 </form>

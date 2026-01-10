@@ -123,6 +123,8 @@
 				class="input w-full min-h-[100px]"
 				value={preferences.selectedSubjects}
 				onchange={handleSubjectChange}
+				aria-label="Filter by genre or subject. Hold Ctrl or Cmd to select multiple options"
+				aria-describedby="subject-filter-hint"
 			>
 				{#each allSubjects as subject}
 					<option value={subject} selected={preferences.selectedSubjects.includes(subject)}>
@@ -130,7 +132,7 @@
 					</option>
 				{/each}
 			</select>
-			<p class="text-xs text-academia-cream/60 mt-1">
+			<p id="subject-filter-hint" class="text-xs text-academia-cream/60 mt-1">
 				Hold Ctrl/Cmd to select multiple
 			</p>
 		</div>
@@ -141,6 +143,7 @@
 				Filter by Year
 			</label>
 			<div class="flex gap-2 items-center">
+				<label for="year-min" class="sr-only">Minimum publication year</label>
 				<input
 					id="year-min"
 					type="number"
@@ -150,8 +153,10 @@
 					max={maxYear || undefined}
 					value={preferences.yearRange.min || ''}
 					oninput={handleYearMinChange}
+					aria-label="Minimum publication year"
 				/>
-				<span class="text-academia-cream/60">-</span>
+				<span class="text-academia-cream/60" aria-hidden="true">-</span>
+				<label for="year-max" class="sr-only">Maximum publication year</label>
 				<input
 					id="year-max"
 					type="number"
@@ -161,6 +166,7 @@
 					max={maxYear || undefined}
 					value={preferences.yearRange.max || ''}
 					oninput={handleYearMaxChange}
+					aria-label="Maximum publication year"
 				/>
 			</div>
 			{#if decades.length > 0}
@@ -173,6 +179,7 @@
 							: ''
 					}
 					onchange={handleDecadeChange}
+					aria-label="Filter by decade"
 				>
 					<option value="">All decades</option>
 					{#each decades as decade}
@@ -193,6 +200,7 @@
 					class="input flex-1"
 					value={preferences.sortBy}
 					onchange={handleSortChange}
+					aria-label="Sort books by"
 				>
 					<option value="similarity">Similarity</option>
 					<option value="year">Year</option>
@@ -201,9 +209,10 @@
 				<button
 					class="btn btn-secondary"
 					onclick={handleSortDirectionChange}
-					title={preferences.sortDirection === 'asc' ? 'Ascending' : 'Descending'}
+					aria-label={preferences.sortDirection === 'asc' ? 'Change to descending sort order' : 'Change to ascending sort order'}
+					aria-pressed={preferences.sortDirection === 'desc'}
 				>
-					{preferences.sortDirection === 'asc' ? '↑' : '↓'}
+					<span aria-hidden="true">{preferences.sortDirection === 'asc' ? '↑' : '↓'}</span>
 				</button>
 			</div>
 		</div>
@@ -214,44 +223,48 @@
 		<div class="mt-4 pt-4 border-t border-academia-lighter">
 			<div class="flex items-center justify-between mb-2">
 				<span class="text-sm font-medium text-academia-cream">Active Filters:</span>
-				<button class="btn btn-secondary text-xs" onclick={clearAllFilters}>
+				<button 
+					class="btn btn-secondary text-xs" 
+					onclick={clearAllFilters}
+					aria-label="Clear all active filters"
+				>
 					Clear All
 				</button>
 			</div>
-			<div class="flex flex-wrap gap-2">
+			<div class="flex flex-wrap gap-2" role="list" aria-label="Active filters">
 				{#each preferences.selectedSubjects as subject}
-					<span class="px-2 py-1 bg-academia-accent/30 rounded text-xs text-academia-cream flex items-center gap-1">
+					<span class="px-2 py-1 bg-academia-accent/30 rounded text-xs text-academia-cream flex items-center gap-1" role="listitem">
 						{subject}
 						<button
-							class="hover:text-academia-gold"
+							class="hover:text-academia-gold focus:outline-2 focus:outline-offset-1 focus:outline-academia-gold"
 							onclick={() => clearSubjectFilter(subject)}
-							title="Remove filter"
+							aria-label="Remove {subject} filter"
 						>
-							×
+							<span aria-hidden="true">×</span>
 						</button>
 					</span>
 				{/each}
 				{#if preferences.yearRange.min !== null || preferences.yearRange.max !== null}
-					<span class="px-2 py-1 bg-academia-accent/30 rounded text-xs text-academia-cream flex items-center gap-1">
+					<span class="px-2 py-1 bg-academia-accent/30 rounded text-xs text-academia-cream flex items-center gap-1" role="listitem">
 						Year: {preferences.yearRange.min || 'Any'} - {preferences.yearRange.max || 'Any'}
 						<button
-							class="hover:text-academia-gold"
+							class="hover:text-academia-gold focus:outline-2 focus:outline-offset-1 focus:outline-academia-gold"
 							onclick={() => updatePreferences({ yearRange: { min: null, max: null } })}
-							title="Remove filter"
+							aria-label="Remove year filter"
 						>
-							×
+							<span aria-hidden="true">×</span>
 						</button>
 					</span>
 				{/if}
 				{#if preferences.sortBy !== 'similarity' || preferences.sortDirection !== 'desc'}
-					<span class="px-2 py-1 bg-academia-accent/30 rounded text-xs text-academia-cream flex items-center gap-1">
+					<span class="px-2 py-1 bg-academia-accent/30 rounded text-xs text-academia-cream flex items-center gap-1" role="listitem">
 						Sort: {preferences.sortBy} ({preferences.sortDirection})
 						<button
-							class="hover:text-academia-gold"
+							class="hover:text-academia-gold focus:outline-2 focus:outline-offset-1 focus:outline-academia-gold"
 							onclick={() => updatePreferences({ sortBy: 'similarity', sortDirection: 'desc' })}
-							title="Reset sort"
+							aria-label="Reset sort to default"
 						>
-							×
+							<span aria-hidden="true">×</span>
 						</button>
 					</span>
 				{/if}

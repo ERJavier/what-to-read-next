@@ -115,6 +115,8 @@
 <div 
 	bind:this={containerElement}
 	class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+	role="region"
+	aria-label="Book results grid"
 >
 	{#each books as book, index (book.id)}
 		{@const shouldRender = !shouldVirtualize || visibleIndices.has(index)}
@@ -139,7 +141,7 @@
 </div>
 
 {#if books.length === 0}
-	<div class="text-center py-12">
+	<div class="text-center py-12" role="status" aria-live="polite">
 		<p class="text-academia-cream/60 text-lg">No books found. Try a different search.</p>
 	</div>
 {/if}

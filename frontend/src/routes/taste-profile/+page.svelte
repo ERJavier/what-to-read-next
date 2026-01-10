@@ -30,6 +30,14 @@
 	<title>Taste Profile - WhatToRead</title>
 </svelte:head>
 
+<!-- Skip to main content link -->
+<a
+	href="#main-content"
+	class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-academia-gold focus:text-academia-dark focus:rounded focus:font-semibold"
+>
+	Skip to main content
+</a>
+
 <div class="min-h-screen p-4 md:p-8">
 	<header class="text-center mb-8">
 		<h1 class="text-4xl md:text-5xl font-serif font-bold text-academia-gold mb-4">
@@ -40,16 +48,20 @@
 		</p>
 	</header>
 
-	<div class="flex justify-center mb-6">
-		<button class="btn btn-secondary" onclick={() => goto('/')}>
-			← Back to Search
+	<nav aria-label="Navigation" class="flex justify-center mb-6">
+		<button 
+			class="btn btn-secondary focus:outline-2 focus:outline-offset-2 focus:outline-academia-gold" 
+			onclick={() => goto('/')}
+			aria-label="Go back to search page"
+		>
+			<span aria-hidden="true">←</span> Back to Search
 		</button>
-	</div>
+	</nav>
 
-	<div class="max-w-4xl mx-auto">
+	<main id="main-content" role="main" class="max-w-4xl mx-auto">
 		<EnhancedTasteProfile 
 			history={searchHistory} 
 			onHistoryChange={loadSearchHistory}
 		/>
-	</div>
+	</main>
 </div>

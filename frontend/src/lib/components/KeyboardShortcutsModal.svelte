@@ -5,6 +5,8 @@
 	}
 
 	let { open, onClose }: Props = $props();
+	let modalContentRef: HTMLDivElement | null = $state(null);
+	let lastFocusedElement: HTMLElement | null = null;
 
 	function handleEscape(e: KeyboardEvent) {
 		if (e.key === 'Escape') {
@@ -19,21 +21,56 @@
 	}
 
 	function handleBackdropKeydown(e: KeyboardEvent) {
-		if (e.key === 'Escape' || e.key === 'Enter') {
+		if (e.key === 'Escape') {
 			onClose();
+		} else if (e.key === 'Tab') {
+			trapFocus(e);
 		}
 	}
 
-	// Handle escape key
+	// Focus trap for keyboard navigation
+	function trapFocus(e: KeyboardEvent) {
+		if (e.key !== 'Tab' || !modalContentRef) return;
+
+		const focusableElements = modalContentRef.querySelectorAll<HTMLElement>(
+			'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+		);
+		const firstElement = focusableElements[0];
+		const lastElement = focusableElements[focusableElements.length - 1];
+
+		if (e.shiftKey) {
+			if (document.activeElement === firstElement) {
+				e.preventDefault();
+				lastElement?.focus();
+			}
+		} else {
+			if (document.activeElement === lastElement) {
+				e.preventDefault();
+				firstElement?.focus();
+			}
+		}
+	}
+
+	// Handle escape key and focus management
 	$effect(() => {
 		if (!open || typeof window === 'undefined') return;
+
+		// Store the element that opened the modal
+		lastFocusedElement = document.activeElement as HTMLElement;
 
 		window.addEventListener('keydown', handleEscape);
 		document.body.style.overflow = 'hidden';
 
+		// Focus the modal content when it opens
+		setTimeout(() => {
+			modalContentRef?.focus();
+		}, 100);
+
 		return () => {
 			window.removeEventListener('keydown', handleEscape);
 			document.body.style.overflow = '';
+			// Return focus to the element that opened the modal
+			lastFocusedElement?.focus();
 		};
 	});
 </script>
@@ -51,10 +88,18 @@
 	>
 		<!-- Modal Content -->
 		<div
-			class="bg-academia-light rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-academia-lighter"
+			bind:this={modalContentRef}
+			class="bg-academia-light rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-academia-lighter focus:outline-none"
 			onclick={(e) => e.stopPropagation()}
-			onkeydown={(e) => e.stopPropagation()}
+			onkeydown={(e) => {
+				e.stopPropagation();
+				if (e.key === 'Tab') {
+					trapFocus(e);
+				}
+			}}
 			role="document"
+			tabindex="-1"
+			aria-labelledby="shortcuts-title"
 		>
 			<!-- Header -->
 			<div class="sticky top-0 bg-academia-light z-10 flex justify-between items-center p-6 border-b border-academia-lighter">
@@ -66,15 +111,17 @@
 				</h2>
 				<button
 					onclick={onClose}
-					class="text-academia-cream/60 hover:text-academia-cream transition-colors"
-					aria-label="Close modal"
+					class="text-academia-cream/60 hover:text-academia-cream transition-colors focus:outline-2 focus:outline-offset-2 focus:outline-academia-gold rounded"
+					aria-label="Close keyboard shortcuts modal"
 				>
+					<span class="sr-only">Close</span>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
 						class="h-6 w-6"
 						fill="none"
 						viewBox="0 0 24 24"
 						stroke="currentColor"
+						aria-hidden="true"
 					>
 						<path
 							stroke-linecap="round"
@@ -160,7 +207,11 @@
 
 			<!-- Footer -->
 			<div class="sticky bottom-0 bg-academia-light border-t border-academia-lighter p-4 flex justify-end">
-				<button onclick={onClose} class="btn btn-primary">
+				<button 
+					onclick={onClose} 
+					class="btn btn-primary focus:outline-2 focus:outline-offset-2 focus:outline-academia-gold"
+					aria-label="Close keyboard shortcuts help"
+				>
 					Got it
 				</button>
 			</div>

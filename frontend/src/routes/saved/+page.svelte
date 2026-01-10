@@ -94,6 +94,14 @@
 	<title>Saved Books - WhatToRead</title>
 </svelte:head>
 
+<!-- Skip to main content link -->
+<a
+	href="#main-content"
+	class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-academia-gold focus:text-academia-dark focus:rounded focus:font-semibold"
+>
+	Skip to main content
+</a>
+
 <div class="min-h-screen p-4 md:p-8">
 	<header class="text-center mb-8">
 		<h1 class="text-4xl md:text-5xl font-serif font-bold text-academia-gold mb-4">
@@ -103,48 +111,68 @@
 			Your interested and not interested books
 		</p>
 
-		<div class="flex gap-4 mb-6 justify-center flex-wrap">
+		<nav aria-label="Filter saved books" class="flex gap-4 mb-6 justify-center flex-wrap">
 			<button
 				class="btn {filter === 'all' ? 'btn-primary' : 'btn-secondary'}"
 				onclick={() => (filter = 'all')}
+				aria-label="Show all saved books. Total: {totalSaved}"
+				aria-pressed={filter === 'all'}
 			>
 				All ({totalSaved})
 			</button>
 			<button
 				class="btn {filter === 'interested' ? 'btn-primary' : 'btn-secondary'}"
 				onclick={() => (filter = 'interested')}
+				aria-label="Show interested books. Total: {totalInterested}"
+				aria-pressed={filter === 'interested'}
 			>
 				Interested ({totalInterested})
 			</button>
 			<button
 				class="btn {filter === 'not_interested' ? 'btn-primary' : 'btn-secondary'}"
 				onclick={() => (filter = 'not_interested')}
+				aria-label="Show not interested books. Total: {totalNotInterested}"
+				aria-pressed={filter === 'not_interested'}
 			>
 				Not Interested ({totalNotInterested})
 			</button>
-			<button class="btn btn-secondary" onclick={() => goto('/')}>
+			<button 
+				class="btn btn-secondary" 
+				onclick={() => goto('/')}
+				aria-label="Go back to search page"
+			>
 				Back to Search
 			</button>
 			{#if totalSaved > 0}
-				<button class="btn btn-secondary" onclick={handleClearAll}>
+				<button 
+					class="btn btn-secondary" 
+					onclick={handleClearAll}
+					aria-label="Clear all saved books"
+				>
 					Clear All
 				</button>
 			{/if}
-		</div>
+		</nav>
 	</header>
 
+	<main id="main-content" role="main">
+
 	{#if totalSaved === 0}
-		<div class="text-center py-12 max-w-2xl mx-auto">
+		<div class="text-center py-12 max-w-2xl mx-auto" role="status" aria-live="polite">
 			<p class="text-academia-cream/60 text-lg mb-4">
 				No saved books yet. Start swiping to save books you're interested in or not
 				interested in!
 			</p>
-			<button class="btn btn-primary" onclick={() => goto('/')}>
+			<button 
+				class="btn btn-primary" 
+				onclick={() => goto('/')}
+				aria-label="Go to search page to start searching for books"
+			>
 				Start Searching
 			</button>
 		</div>
 	{:else if filteredBooks.length === 0}
-		<div class="text-center py-12">
+		<div class="text-center py-12" role="status" aria-live="polite">
 			<p class="text-academia-cream/60 text-lg">
 				No books in this category. Try a different filter.
 			</p>
@@ -160,16 +188,18 @@
 						{#if status === 'interested'}
 							<span
 								class="px-2 py-1 bg-green-900/30 border border-green-600 rounded text-xs text-green-300"
-								title="Interested"
+								role="status"
+								aria-label="Status: Interested"
 							>
-								✓ Interested
+								<span aria-hidden="true">✓</span> Interested
 							</span>
 						{:else if status === 'not_interested'}
 							<span
 								class="px-2 py-1 bg-red-900/30 border border-red-600 rounded text-xs text-red-300"
-								title="Not Interested"
+								role="status"
+								aria-label="Status: Not Interested"
 							>
-								✕ Not Interested
+								<span aria-hidden="true">✕</span> Not Interested
 							</span>
 						{/if}
 					</div>
@@ -206,21 +236,24 @@
 
 					<div class="flex gap-2 mt-4 pt-4 border-t border-academia-lighter">
 						<button
-							class="btn btn-primary flex-1"
+							class="btn btn-primary flex-1 focus:outline-2 focus:outline-offset-2 focus:outline-academia-gold"
 							onclick={() => handleBookClick(book)}
+							aria-label="View details for {book.title}"
 						>
 							View Details
 						</button>
 						<button
-							class="btn btn-secondary"
+							class="btn btn-secondary focus:outline-2 focus:outline-offset-2 focus:outline-academia-gold"
 							onclick={() => handleRemoveBook(book.id)}
-							title="Remove from saved"
+							aria-label="Remove {book.title} from saved books"
 						>
-							✕
+							<span aria-hidden="true">✕</span>
+							<span class="sr-only">Remove</span>
 						</button>
 					</div>
 				</div>
 			{/each}
 		</div>
 	{/if}
+	</main>
 </div>

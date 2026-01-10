@@ -74,12 +74,19 @@
 </script>
 
 <div
-	class="card cursor-grab active:cursor-grabbing select-none"
+	class="card cursor-grab active:cursor-grabbing select-none focus:outline-2 focus:outline-offset-2 focus:outline-academia-gold"
 	style="transform: translate({x}px, {y}px) rotate({x * 0.1}deg); opacity: {1 - Math.abs(x) / 300}"
 	onpointerdown={handleStart}
 	onclick={onClick}
+	onkeydown={(e) => {
+		if (e.key === 'Enter' || e.key === ' ') {
+			e.preventDefault();
+			onClick?.();
+		}
+	}}
 	role="button"
 	tabindex="0"
+	aria-label="Book: {book.title} by {book.authors?.join(', ') || 'Unknown author'}. {book.first_publish_year ? `Published in ${book.first_publish_year}. ` : ''}{book.similarity !== undefined ? `Match: ${Math.round(book.similarity * 100)}%. ` : ''}Click to view details, or swipe left for not interested, swipe right for interested."
 >
 	<h2 class="text-2xl font-serif font-bold text-academia-gold mb-2">{book.title}</h2>
 	
@@ -94,9 +101,9 @@
 	{/if}
 	
 	{#if book.subjects && book.subjects.length > 0}
-		<div class="flex flex-wrap gap-2 mb-4">
+		<div class="flex flex-wrap gap-2 mb-4" role="list" aria-label="Subjects and genres">
 			{#each book.subjects.slice(0, 5) as subject}
-				<span class="px-2 py-1 bg-academia-lighter rounded text-xs text-academia-cream">
+				<span class="px-2 py-1 bg-academia-lighter rounded text-xs text-academia-cream" role="listitem">
 					{subject}
 				</span>
 			{/each}
