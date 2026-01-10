@@ -29,7 +29,7 @@
 			if (value.trim()) {
 				onSearch?.(value.trim());
 			}
-		}, 500);
+		}, 300);
 	}
 
 	function handleSubmit(e: Event) {

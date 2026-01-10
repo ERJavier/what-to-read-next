@@ -31,8 +31,13 @@
 	let showShortcutsModal = $state(false);
 	let searchBarRef: any = $state(null);
 	let swipeStackRef: any = $state(null);
+	let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
 	const INITIAL_LIMIT = 20;
 	const LOAD_MORE_INCREMENT = 20;
+	const MAX_LIMIT = 100; // Match API's maximum limit (defined in RecommendationRequest model)
+
+	// Apply filters and sorting to books
+	let books = $derived(applyFiltersAndSort(allBooks, filterPreferences));
 
 	// Apply filters and sorting to books
 	let books = $derived(applyFiltersAndSort(allBooks, filterPreferences));
@@ -52,23 +57,33 @@
 		};
 		window.addEventListener('storage', handleStorageChange);
 
-		// Handle scroll for back to top button and infinite scroll
+		// Handle scroll for back to top button and infinite scroll (with throttling)
 		const handleScroll = () => {
 			showBackToTop = window.scrollY > 400;
 			
-			// Infinite scroll: load more when near bottom
-			if (paginationMode === 'infinite-scroll' && !loadingMore && hasMoreResults) {
-				const scrollPosition = window.innerHeight + window.scrollY;
-				const documentHeight = document.documentElement.scrollHeight;
-				const threshold = 200; // Load when 200px from bottom
-				
-				if (scrollPosition >= documentHeight - threshold) {
-					loadMoreBooks();
-				}
+			// Throttle scroll events to prevent rapid firing
+			if (scrollTimeout) {
+				clearTimeout(scrollTimeout);
 			}
+			
+			scrollTimeout = setTimeout(() => {
+				// Infinite scroll: load more when near bottom
+				if (paginationMode === 'infinite-scroll' && !loadingMore && hasMoreResults && searchQuery) {
+					const scrollPosition = window.innerHeight + window.scrollY;
+					const documentHeight = document.documentElement.scrollHeight;
+					const threshold = 200; // Load when 200px from bottom
+					
+					if (scrollPosition >= documentHeight - threshold) {
+						loadMoreBooks();
+					}
+				}
+			}, 100); // Throttle to max once per 100ms
 		};
 		
-		window.addEventListener('scroll', handleScroll);
+		window.addEventListener('scroll', handleScroll, { passive: true });
+		
+		// Handle keyboard shortcuts
+		window.addEventListener('keydown', handleKeyboardShortcuts);
 		
 		// Handle keyboard shortcuts
 		window.addEventListener('keydown', handleKeyboardShortcuts);
@@ -77,6 +92,9 @@
 			window.removeEventListener('storage', handleStorageChange);
 			window.removeEventListener('scroll', handleScroll);
 			window.removeEventListener('keydown', handleKeyboardShortcuts);
+			if (scrollTimeout) {
+				clearTimeout(scrollTimeout);
+			}
 		};
 	});
 
@@ -87,6 +105,7 @@
 		error = null;
 		searchQuery = query;
 		currentLimit = INITIAL_LIMIT;
+		hasMoreResults = false; // Reset until we know otherwise
 		
 		try {
 			const results = await getRecommendations({ query, limit: INITIAL_LIMIT });
@@ -102,6 +121,8 @@
 			// Reset scroll position
 			showBackToTop = false;
 		} catch (e) {
+			const errorMessage = e instanceof Error ? e.message : 'Failed to search';
+			error = new Error(errorMessage);
 			error = e instanceof Error ? e : new Error('Failed to search');
 			allBooks = [];
 			hasMoreResults = false;
@@ -113,9 +134,20 @@
 	async function loadMoreBooks() {
 		if (loadingMore || !searchQuery || !hasMoreResults) return;
 		
+		// Prevent exceeding max limit to avoid validation errors
+		// API allows max 100 books per request
+		if (currentLimit >= MAX_LIMIT) {
+			hasMoreResults = false;
+			loadingMore = false;
+			return;
+		}
+		
 		loadingMore = true;
+		error = null; // Clear any previous errors
+		
 		try {
-			const newLimit = currentLimit + LOAD_MORE_INCREMENT;
+			// Calculate new limit, ensuring we don't exceed API's max of 100
+			const newLimit = Math.min(currentLimit + LOAD_MORE_INCREMENT, MAX_LIMIT);
 			const newResults = await getRecommendations({ query: searchQuery, limit: newLimit });
 			
 			// Deduplicate by book ID (in case API returns duplicates)
@@ -126,9 +158,23 @@
 			currentLimit = newLimit;
 			
 			// Check if there might be more results
-			hasMoreResults = newResults.length === newLimit && additionalBooks.length > 0;
-		} catch (e) {
-			error = e instanceof Error ? e : new Error('Failed to load more books');
+			// Stop if we've reached the max limit or got fewer results than requested
+			hasMoreResults = newLimit < MAX_LIMIT && newResults.length >= newLimit && additionalBooks.length > 0;
+			
+			// If we've hit the max limit, don't try to load more
+			if (newLimit >= MAX_LIMIT) {
+				hasMoreResults = false;
+			}
+		} catch (err) {
+			const errorMessage: string = err instanceof Error ? err.message : 'Failed to load more books';
+			
+			// Set the error
+			error = new Error(errorMessage);
+			
+			// If it's a validation error or limit reached, stop trying to load more
+			if (errorMessage.includes('Validation') || currentLimit >= MAX_LIMIT) {
+				hasMoreResults = false;
+			}
 		} finally {
 			loadingMore = false;
 		}
@@ -229,6 +275,9 @@
 		<button class="btn btn-secondary" onclick={() => goto('/saved')}>
 			Saved Books
 		</button>
+		<button class="btn btn-secondary" onclick={() => goto('/taste-profile')}>
+			Taste Profile
+		</button>
 		{#if allBooks.length > 0}
 			<button
 				class="btn {paginationMode === 'load-more' ? 'btn-primary' : 'btn-secondary'}"
@@ -247,18 +296,30 @@
 		{/if}
 	</div>
 
-	{#if error}
-		<ErrorBoundary error={error} />
-	{/if}
-
 	{#if loading}
 		<Loading message="Finding your perfect books..." />
 	{:else if error}
-		<div class="card bg-red-900/20 border-red-500 max-w-2xl mx-auto">
+		<div class="card bg-red-900/20 border-red-500 max-w-2xl mx-auto mb-6">
 			<h2 class="text-xl font-bold text-red-400 mb-2">Error</h2>
 			<p class="text-red-300">{error.message}</p>
 		</div>
 	{:else if allBooks.length > 0}
+		<div class="max-w-7xl mx-auto">
+			<FilterBar
+				books={allBooks}
+				preferences={filterPreferences}
+				onPreferencesChange={handleFilterPreferencesChange}
+			/>
+			{#if books.length === 0}
+				<div class="card text-center py-8">
+					<p class="text-academia-cream/60 text-lg mb-2">
+						No books match your current filters.
+					</p>
+					<p class="text-academia-cream/40 text-sm">
+						Try adjusting your filter criteria.
+					</p>
+				</div>
+			{:else}
 		<div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
 			<div class="lg:col-span-1">
 				<TasteProfile 
@@ -318,12 +379,17 @@
 							{/if}
 							{#if !hasMoreResults && books.length > INITIAL_LIMIT}
 								<p class="text-academia-cream/60 text-sm py-4">
-									You've reached the end of the results
+									{#if currentLimit >= MAX_LIMIT}
+										You've reached the maximum number of results ({MAX_LIMIT} books). Try refining your search for more specific results.
+									{:else}
+										You've reached the end of the results
+									{/if}
 								</p>
 							{/if}
 						{/if}
 					</div>
 				{/if}
+			{/if}
 				{/if}
 			</div>
 		</div>
