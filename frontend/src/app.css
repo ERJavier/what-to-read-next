@@ -29,6 +29,27 @@
 		@apply bg-base text-primary font-sans transition-colors duration-300;
 		background-color: var(--bg-base);
 		color: var(--text-primary);
+		font-size: clamp(0.875rem, 0.75rem + 0.5vw, 1rem); /* Responsive base font size */
+	}
+
+	/* Responsive typography scaling */
+	h1 {
+		font-size: clamp(1.875rem, 1.5rem + 1.5vw, 3rem); /* 30px - 48px */
+	}
+
+	h2 {
+		font-size: clamp(1.5rem, 1.25rem + 1vw, 2.25rem); /* 24px - 36px */
+	}
+
+	h3 {
+		font-size: clamp(1.25rem, 1.125rem + 0.5vw, 1.875rem); /* 20px - 30px */
+	}
+
+	/* Landscape mode optimizations */
+	@media (orientation: landscape) and (max-height: 500px) {
+		body {
+			font-size: 0.875rem;
+		}
 	}
 
 	/* Smooth theme transitions */
@@ -109,10 +130,20 @@
 	}
 	
 	.btn-secondary {
-		@apply bg-elevated dark:bg-academia-lighter text-primary dark:text-academia-cream hover:bg-academia-cream/30 dark:hover:bg-academia-light border border-default/30 dark:border-academia-lighter/50;
+		@apply bg-elevated dark:bg-academia-lighter text-primary dark:text-academia-cream hover:bg-academia-cream/30 dark:hover:bg-academia-light border;
+		border-color: rgba(212, 175, 55, 0.3); /* border-default #d4af37 with 30% opacity */
+	}
+	
+	.dark .btn-secondary {
+		border-color: rgba(61, 61, 61, 0.5); /* academia-lighter #3d3d3d with 50% opacity */
 	}
 	
 	.input {
-		@apply w-full px-4 py-2 bg-surface dark:bg-academia-light border border-default/50 dark:border-academia-lighter rounded-md text-primary dark:text-academia-cream placeholder-text-muted dark:placeholder-academia-accent focus:outline-none focus:ring-2 focus:ring-academia-gold dark:focus:ring-academia-gold;
+		@apply w-full px-4 py-2 bg-surface dark:bg-academia-light border rounded-md text-primary dark:text-academia-cream placeholder:text-muted dark:placeholder:text-academia-accent focus:outline-none focus:ring-2 focus:ring-academia-gold dark:focus:ring-academia-gold;
+		border-color: rgba(212, 175, 55, 0.5); /* border-default #d4af37 with 50% opacity */
+	}
+	
+	.dark .input {
+		border-color: #3d3d3d; /* academia-lighter */
 	}
 }

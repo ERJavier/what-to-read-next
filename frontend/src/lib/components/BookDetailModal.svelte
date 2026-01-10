@@ -147,7 +147,7 @@
 
 <!-- Modal Backdrop -->
 <div
-	class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 overflow-y-auto"
+	class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
 	onclick={handleBackdropClick}
 	onkeydown={handleBackdropKeydown}
 	role="dialog"
@@ -158,7 +158,7 @@
 	<!-- Modal Content -->
 	<div
 		bind:this={modalContentRef}
-		class="bg-academia-light rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-academia-lighter focus:outline-none"
+		class="bg-academia-light rounded-lg shadow-2xl max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto border border-academia-lighter focus:outline-none m-2 sm:m-0"
 		onclick={(e) => e.stopPropagation()}
 		onkeydown={(e) => {
 			e.stopPropagation();
@@ -198,18 +198,18 @@
 		</div>
 
 		<!-- Modal Body -->
-		<div class="p-6 md:p-8">
+		<div class="p-4 sm:p-6 md:p-8">
 			{#if loading}
-				<div class="space-y-6">
-					<Skeleton variant="text" height="3rem" width="80%" class="mb-4" />
+				<div class="space-y-4 sm:space-y-6">
+					<Skeleton variant="text" height="2.5rem" width="80%" class="mb-4" />
 					<Skeleton variant="text" height="1.5rem" width="60%" lines={2} class="mb-6" />
 					<Skeleton variant="card" height="200px" class="mb-6" />
 					<Skeleton variant="rectangular" height="100px" />
 				</div>
 			{:else if error}
 				<ErrorBoundary error={error} showSuggestions={true} />
-				<div class="mt-4 flex gap-3">
-					<button onclick={onClose} class="btn btn-secondary">
+				<div class="mt-4 flex flex-col sm:flex-row gap-3">
+					<button onclick={onClose} class="btn btn-secondary w-full sm:w-auto">
 						Close
 					</button>
 					<button
@@ -219,7 +219,7 @@
 								loadBookDetail(bookId);
 							}
 						}}
-						class="btn btn-primary"
+						class="btn btn-primary w-full sm:w-auto"
 					>
 						Retry
 					</button>
@@ -230,16 +230,16 @@
 				</div>
 				
 				<!-- Header Section with Title and Metadata -->
-				<div class="mb-8 pb-6 border-b border-academia-lighter">
+				<div class="mb-6 sm:mb-8 pb-4 sm:pb-6 border-b border-academia-lighter">
 					<h1
 						id="modal-title"
-						class="text-3xl md:text-4xl font-serif font-bold text-academia-gold mb-4 leading-tight"
+						class="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-academia-gold mb-3 sm:mb-4 leading-tight"
 					>
 						{book.title}
 					</h1>
 
 					<!-- Metadata Row -->
-					<div class="flex flex-wrap gap-4 items-center text-sm text-academia-cream/70">
+					<div class="flex flex-wrap gap-3 sm:gap-4 items-center text-xs sm:text-sm text-academia-cream/70">
 						{#if book.first_publish_year}
 							<div class="flex items-center gap-2">
 								<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-academia-cream/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
@@ -271,8 +271,8 @@
 
 				<!-- Authors Section -->
 				{#if book.authors && book.authors.length > 0}
-					<div class="mb-8">
-						<h2 class="text-xl font-semibold text-academia-cream mb-3 flex items-center gap-2">
+					<div class="mb-6 sm:mb-8">
+						<h2 class="text-lg sm:text-xl font-semibold text-academia-cream mb-2 sm:mb-3 flex items-center gap-2">
 							<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-academia-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
 							</svg>
@@ -288,8 +288,8 @@
 
 				<!-- All Subjects -->
 				{#if book.subjects && book.subjects.length > 0}
-					<div class="mb-8">
-						<h2 class="text-xl font-semibold text-academia-cream mb-3 flex items-center gap-2">
+					<div class="mb-6 sm:mb-8">
+						<h2 class="text-lg sm:text-xl font-semibold text-academia-cream mb-2 sm:mb-3 flex items-center gap-2">
 							<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-academia-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
 							</svg>
@@ -313,8 +313,8 @@
 
 				<!-- Search Content / Description -->
 				{#if book.search_content && book.search_content !== book.title}
-					<div class="mb-8">
-						<h2 class="text-xl font-semibold text-academia-cream mb-3 flex items-center gap-2">
+					<div class="mb-6 sm:mb-8">
+						<h2 class="text-lg sm:text-xl font-semibold text-academia-cream mb-2 sm:mb-3 flex items-center gap-2">
 							<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-academia-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
 							</svg>
@@ -361,13 +361,13 @@
 				{/if}
 
 				<!-- Related/Recommended Books Section -->
-				<section class="mt-8 pt-6 border-t border-academia-lighter" aria-labelledby="related-books-heading">
-					<h2 id="related-books-heading" class="text-xl font-semibold text-academia-cream/80 mb-4">
+				<section class="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-academia-lighter" aria-labelledby="related-books-heading">
+					<h2 id="related-books-heading" class="text-lg sm:text-xl font-semibold text-academia-cream/80 mb-3 sm:mb-4">
 						Related Books
 					</h2>
 
 					{#if loadingRelated}
-						<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+						<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
 							{#each Array(6) as _}
 								<Skeleton variant="card" height="300px" />
 							{/each}

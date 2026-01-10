@@ -30,17 +30,17 @@
 		enableVirtualization && books.length >= virtualizationThreshold
 	);
 
-	// Grid column classes based on card size
+	// Grid column classes based on card size with ultra-wide support
 	const gridClasses = $derived.by(() => {
-		const baseClasses = 'grid gap-6';
+		const baseClasses = 'grid gap-4 sm:gap-5 md:gap-6';
 		switch (cardSize) {
 			case 'small':
-				return `${baseClasses} grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6`;
+				return `${baseClasses} grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 3xl:grid-cols-8`;
 			case 'large':
-				return `${baseClasses} grid-cols-1 md:grid-cols-2 lg:grid-cols-3`;
+				return `${baseClasses} grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4`;
 			case 'medium':
 			default:
-				return `${baseClasses} grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4`;
+				return `${baseClasses} grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 3xl:grid-cols-7`;
 		}
 	});
 

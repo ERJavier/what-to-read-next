@@ -146,12 +146,12 @@
 	Skip to main content
 </a>
 
-<div class="min-h-screen p-4 md:p-8">
-	<header class="text-center mb-8">
-		<h1 class="text-4xl md:text-5xl font-serif font-bold text-academia-gold mb-4">
+<div class="min-h-screen p-2 sm:p-4 md:p-6 lg:p-8">
+	<header class="text-center mb-4 sm:mb-6 md:mb-8 px-2">
+		<h1 class="text-3xl sm:text-4xl md:text-5xl font-serif font-bold text-academia-gold mb-2 sm:mb-4">
 			Saved Books
 		</h1>
-		<p class="text-academia-cream/80 text-lg mb-6">
+		<p class="text-academia-cream/80 text-base sm:text-lg mb-4 sm:mb-6">
 			Your interested and not interested books
 		</p>
 
@@ -171,7 +171,7 @@
 						Export/Print
 					</button>
 					{#if showExportMenu}
-						<div class="absolute top-full mt-2 bg-academia-light border border-academia-lighter rounded-lg shadow-xl z-10 min-w-[180px] right-0 md:left-1/2 md:-translate-x-1/2">
+						<div class="absolute top-full mt-2 bg-academia-light border border-academia-lighter rounded-lg shadow-xl z-10 min-w-[180px] right-0 sm:left-1/2 sm:-translate-x-1/2">
 							<button
 								class="block w-full text-left px-4 py-2 text-sm text-academia-cream hover:bg-academia-lighter transition-colors"
 								onclick={handleExportJSON}
@@ -205,7 +205,7 @@
 			</div>
 		{/if}
 
-		<nav aria-label="Filter saved books" class="flex gap-4 mb-6 justify-center flex-wrap">
+		<nav aria-label="Filter saved books" class="flex gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6 justify-center flex-wrap px-2">
 			<button
 				class="btn {filter === 'all' ? 'btn-primary' : 'btn-secondary'}"
 				onclick={() => (filter = 'all')}
@@ -272,7 +272,7 @@
 			</p>
 		</div>
 	{:else}
-		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+		<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5 md:gap-6">
 			{#each filteredBooks as book (book.id)}
 				{@const status = getBookStatus(book.id)}
 				{@const savedBook = savedBooks.interested.find((sb) => sb.book.id === book.id) ||
@@ -298,7 +298,7 @@
 						{/if}
 					</div>
 
-					<h2 class="text-2xl font-serif font-bold text-academia-gold mb-2 pr-20">
+					<h2 class="text-xl sm:text-2xl font-serif font-bold text-academia-gold mb-2 pr-16 sm:pr-20">
 						{book.title}
 					</h2>
 

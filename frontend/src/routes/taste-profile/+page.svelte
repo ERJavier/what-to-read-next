@@ -52,17 +52,17 @@
 	Skip to main content
 </a>
 
-<div class="min-h-screen p-4 md:p-8">
-	<header class="text-center mb-8">
-		<h1 class="text-4xl md:text-5xl font-serif font-bold text-academia-gold mb-4">
+<div class="min-h-screen p-2 sm:p-4 md:p-6 lg:p-8">
+	<header class="text-center mb-4 sm:mb-6 md:mb-8 px-2">
+		<h1 class="text-3xl sm:text-4xl md:text-5xl font-serif font-bold text-academia-gold mb-2 sm:mb-4">
 			Your Taste Profile
 		</h1>
-		<p class="text-academia-cream/80 text-lg mb-6">
+		<p class="text-academia-cream/80 text-base sm:text-lg mb-4 sm:mb-6">
 			Discover insights about your reading preferences
 		</p>
 	</header>
 
-	<nav aria-label="Navigation" class="flex justify-center mb-6">
+	<nav aria-label="Navigation" class="flex justify-center mb-4 sm:mb-6 px-2">
 		<button 
 			class="btn btn-secondary focus:outline-2 focus:outline-offset-2 focus:outline-academia-gold" 
 			onclick={() => goto('/')}

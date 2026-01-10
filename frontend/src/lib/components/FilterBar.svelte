@@ -109,10 +109,57 @@
 		preferences.sortBy !== 'similarity' ||
 		preferences.sortDirection !== 'desc'
 	);
+	
+	let isExpanded = $state(false);
+	let isMobile = $state(false);
+	
+	function checkMobile() {
+		if (typeof window !== 'undefined') {
+			isMobile = window.innerWidth < 768; // md breakpoint
+		}
+	}
+	
+	$effect(() => {
+		if (typeof window === 'undefined') return;
+		checkMobile();
+		const handleResize = () => checkMobile();
+		window.addEventListener('resize', handleResize);
+		return () => window.removeEventListener('resize', handleResize);
+	});
+	
+	// Auto-expand on mobile if filters are active
+	$effect(() => {
+		if (isMobile && hasActiveFilters && !isExpanded) {
+			isExpanded = true;
+		}
+	});
 </script>
 
-<div class="card mb-6">
-	<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="card mb-4 sm:mb-6">
+	<!-- Mobile Accordion Header -->
+	{#if isMobile}
+		<button
+			class="w-full flex items-center justify-between py-2 text-left"
+			onclick={() => isExpanded = !isExpanded}
+			aria-label={isExpanded ? 'Collapse filters' : 'Expand filters'}
+			aria-expanded={isExpanded}
+		>
+			<span class="text-lg font-semibold text-academia-cream">Filters</span>
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				class="h-5 w-5 text-academia-cream transition-transform {isExpanded ? 'rotate-180' : ''}"
+				fill="none"
+				viewBox="0 0 24 24"
+				stroke="currentColor"
+				aria-hidden="true"
+			>
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+			</svg>
+		</button>
+	{/if}
+	
+	<div class="{isMobile && !isExpanded ? 'hidden' : ''}">
+		<div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
 		<!-- Subject/Genre Filter Group -->
 		<div class="flex flex-col">
 			<div class="flex items-center gap-2 mb-2">
@@ -242,9 +289,11 @@
 		</div>
 	</div>
 
+	</div>
+	
 	<!-- Active Filters Display -->
 	{#if hasActiveFilters}
-		<div class="mt-4 pt-4 border-t border-academia-lighter">
+		<div class="mt-4 pt-4 border-t border-academia-lighter {isMobile && !isExpanded ? 'hidden' : ''}">
 			<div class="flex items-center justify-between mb-2">
 				<span class="text-sm font-medium text-academia-cream">Active Filters:</span>
 				<button 

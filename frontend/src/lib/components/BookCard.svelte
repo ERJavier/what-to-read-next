@@ -103,7 +103,7 @@
 				src={[bookCoverImageSource]}
 				alt={`Cover for ${book.title}`}
 				placeholder={bookCoverPlaceholder || undefined}
-				sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+				sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
 				width="100%"
 				height="100%"
 				class="w-full h-full"
@@ -112,7 +112,7 @@
 		</div>
 	{/if}
 	
-	<h2 class="text-2xl font-serif font-bold text-academia-gold mb-3 leading-tight line-clamp-2">
+	<h2 class="text-xl sm:text-2xl font-serif font-bold text-academia-gold mb-2 sm:mb-3 leading-tight line-clamp-2">
 		{book.title}
 	</h2>
 	

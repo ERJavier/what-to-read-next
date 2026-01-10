@@ -209,16 +209,16 @@ This document tracks the development progress of WhatToRead. Tasks are organized
 - [x] Enhance SwipeStack with better visual feedback
 
 ### Responsive Design
-- [ ] Optimize swipe view for tablets (iPad, etc.)
-- [ ] Improve grid layout for ultra-wide screens
-- [ ] Test and refine mobile touch interactions
-- [ ] Add landscape mode optimizations
-- [ ] Improve navigation menu for small screens
-- [ ] Add responsive typography scaling
-- [ ] Optimize filter bar for mobile (collapsible/accordion)
-- [ ] Improve modal dialogs for mobile screens
-- [ ] Test and fix layout issues on various screen sizes
-- [ ] Add responsive image sizes for book covers
+- [x] Optimize swipe view for tablets (iPad, etc.)
+- [x] Improve grid layout for ultra-wide screens
+- [x] Test and refine mobile touch interactions
+- [x] Add landscape mode optimizations
+- [x] Improve navigation menu for small screens
+- [x] Add responsive typography scaling
+- [x] Optimize filter bar for mobile (collapsible/accordion)
+- [x] Improve modal dialogs for mobile screens
+- [x] Test and fix layout issues on various screen sizes
+- [x] Add responsive image sizes for book covers
 
 ### Accessibility Enhancements
 - [ ] Improve screen reader announcements for dynamic content

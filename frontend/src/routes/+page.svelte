@@ -45,6 +45,7 @@
 	let searchBarRef: any = $state(null);
 	let swipeStackRef: any = $state(null);
 	let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
+	let showMobileNav = $state(false);
 
 	// Apply filters and sorting to books
 	let books = $derived(applyFiltersAndSort(allBooks, filterPreferences));
@@ -326,15 +327,15 @@
 	Skip to main content
 </a>
 
-<div class="min-h-screen p-4 md:p-8">
-	<header class="text-center mb-8 relative">
+<div class="min-h-screen p-2 sm:p-4 md:p-6 lg:p-8">
+	<header class="text-center mb-4 sm:mb-6 md:mb-8 relative px-2">
 		<div class="absolute top-0 right-0 md:right-4">
 			<ThemeToggle />
 		</div>
-		<h1 class="text-4xl md:text-5xl font-serif font-bold text-academia-gold dark:text-academia-gold mb-4">
+		<h1 class="text-3xl sm:text-4xl md:text-5xl font-serif font-bold text-academia-gold dark:text-academia-gold mb-2 sm:mb-4">
 			WhatToRead
 		</h1>
-		<p class="text-primary/80 dark:text-academia-cream/80 text-lg mb-6">
+		<p class="text-primary/80 dark:text-academia-cream/80 text-base sm:text-lg mb-4 sm:mb-6 px-2">
 			Discover your next favorite book through semantic search
 		</p>
 		<Tooltip text="Press / to focus the search bar">
@@ -342,76 +343,111 @@
 		</Tooltip>
 	</header>
 
-	<nav aria-label="View and navigation options" class="flex gap-4 mb-6 justify-center flex-wrap">
-		<Tooltip text="Press ← → arrow keys to swipe (in swipe mode)">
-			<button
-				class="btn {viewMode === 'swipe' ? 'btn-primary' : 'btn-secondary'}"
-				onclick={() => viewMode = 'swipe'}
-				aria-label="Switch to swipe view mode"
-				aria-pressed={viewMode === 'swipe'}
-			>
-				Swipe
-			</button>
-		</Tooltip>
+	<!-- Mobile Navigation Toggle -->
+	<div class="md:hidden mb-4 px-2">
 		<button
-			class="btn {viewMode === 'grid' ? 'btn-primary' : 'btn-secondary'}"
-			onclick={() => viewMode = 'grid'}
-			aria-label="Switch to grid view mode"
-			aria-pressed={viewMode === 'grid'}
+			class="btn btn-secondary w-full flex items-center justify-between"
+			onclick={() => showMobileNav = !showMobileNav}
+			aria-label="Toggle navigation menu"
+			aria-expanded={showMobileNav}
 		>
-			Grid
-		</button>
-		<button 
-			class="btn btn-secondary" 
-			onclick={() => goto('/saved')}
-			aria-label="View saved books"
-		>
-			Saved Books
-		</button>
-		<Tooltip text="Press ? to view all keyboard shortcuts">
-			<button 
-				class="btn btn-secondary" 
-				onclick={() => goto('/taste-profile')}
-				aria-label="View your taste profile"
+			<span>Menu</span>
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				class="h-5 w-5 transition-transform {showMobileNav ? 'rotate-180' : ''}"
+				fill="none"
+				viewBox="0 0 24 24"
+				stroke="currentColor"
+				aria-hidden="true"
 			>
-				Taste Profile
-			</button>
-		</Tooltip>
-		{#if recentlyViewed.length > 0}
-			<button 
-				class="btn btn-secondary" 
-				onclick={() => showRecentlyViewed = !showRecentlyViewed}
-				aria-label="Toggle recently viewed books"
-				aria-expanded={showRecentlyViewed}
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+			</svg>
+		</button>
+	</div>
+
+	<nav 
+		aria-label="View and navigation options" 
+		class="flex flex-col md:flex-row gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6 px-2 {showMobileNav ? '' : 'hidden md:flex'}"
+	>
+		<div class="flex gap-2 sm:gap-3 md:gap-4 flex-wrap">
+			<Tooltip text="Press ← → arrow keys to swipe (in swipe mode)">
+				<button
+					class="btn {viewMode === 'swipe' ? 'btn-primary' : 'btn-secondary'} text-sm md:text-base"
+					onclick={() => { viewMode = 'swipe'; showMobileNav = false; }}
+					aria-label="Switch to swipe view mode"
+					aria-pressed={viewMode === 'swipe'}
+				>
+					Swipe
+				</button>
+			</Tooltip>
+			<button
+				class="btn {viewMode === 'grid' ? 'btn-primary' : 'btn-secondary'} text-sm md:text-base"
+				onclick={() => { viewMode = 'grid'; showMobileNav = false; }}
+				aria-label="Switch to grid view mode"
+				aria-pressed={viewMode === 'grid'}
 			>
-				Recently Viewed ({recentlyViewed.length})
+				Grid
 			</button>
-		{/if}
+			<button 
+				class="btn btn-secondary text-sm md:text-base" 
+				onclick={() => { goto('/saved'); showMobileNav = false; }}
+				aria-label="View saved books"
+			>
+				<span class="hidden sm:inline">Saved Books</span>
+				<span class="sm:hidden">Saved</span>
+			</button>
+			<Tooltip text="Press ? to view all keyboard shortcuts">
+				<button 
+					class="btn btn-secondary text-sm md:text-base" 
+					onclick={() => { goto('/taste-profile'); showMobileNav = false; }}
+					aria-label="View your taste profile"
+				>
+					<span class="hidden sm:inline">Taste Profile</span>
+					<span class="sm:hidden">Profile</span>
+				</button>
+			</Tooltip>
+			{#if recentlyViewed.length > 0}
+				<button 
+					class="btn btn-secondary text-sm md:text-base" 
+					onclick={() => { showRecentlyViewed = !showRecentlyViewed; showMobileNav = false; }}
+					aria-label="Toggle recently viewed books"
+					aria-expanded={showRecentlyViewed}
+				>
+					<span class="hidden sm:inline">Recently Viewed ({recentlyViewed.length})</span>
+					<span class="sm:hidden">Recent ({recentlyViewed.length})</span>
+				</button>
+			{/if}
+		</div>
 		{#if allBooks.length > 0}
-			<button
-				class="btn {paginationMode === 'load-more' ? 'btn-primary' : 'btn-secondary'}"
-				onclick={() => paginationMode = 'load-more'}
-				aria-label="Switch to load more pagination mode. Click 'Load More' button to see additional results"
-				aria-pressed={paginationMode === 'load-more'}
-			>
-				Mode: Load More
-			</button>
-			<button
-				class="btn {paginationMode === 'infinite-scroll' ? 'btn-primary' : 'btn-secondary'}"
-				onclick={() => paginationMode = 'infinite-scroll'}
-				aria-label="Switch to infinite scroll pagination mode. Automatically loads more as you scroll down"
-				aria-pressed={paginationMode === 'infinite-scroll'}
-			>
-				Mode: Auto Scroll
-			</button>
-			<button
-				class="btn {paginationMode === 'pages' ? 'btn-primary' : 'btn-secondary'}"
-				onclick={() => paginationMode = 'pages'}
-				aria-label="Switch to page number pagination mode"
-				aria-pressed={paginationMode === 'pages'}
-			>
-				Mode: Pages
-			</button>
+			<div class="flex gap-2 sm:gap-3 md:gap-4 flex-wrap">
+				<button
+					class="btn {paginationMode === 'load-more' ? 'btn-primary' : 'btn-secondary'} text-xs sm:text-sm md:text-base"
+					onclick={() => { paginationMode = 'load-more'; showMobileNav = false; }}
+					aria-label="Switch to load more pagination mode. Click 'Load More' button to see additional results"
+					aria-pressed={paginationMode === 'load-more'}
+				>
+					<span class="hidden md:inline">Mode: Load More</span>
+					<span class="md:hidden">Load More</span>
+				</button>
+				<button
+					class="btn {paginationMode === 'infinite-scroll' ? 'btn-primary' : 'btn-secondary'} text-xs sm:text-sm md:text-base"
+					onclick={() => { paginationMode = 'infinite-scroll'; showMobileNav = false; }}
+					aria-label="Switch to infinite scroll pagination mode. Automatically loads more as you scroll down"
+					aria-pressed={paginationMode === 'infinite-scroll'}
+				>
+					<span class="hidden md:inline">Mode: Auto Scroll</span>
+					<span class="md:hidden">Auto</span>
+				</button>
+				<button
+					class="btn {paginationMode === 'pages' ? 'btn-primary' : 'btn-secondary'} text-xs sm:text-sm md:text-base"
+					onclick={() => { paginationMode = 'pages'; showMobileNav = false; }}
+					aria-label="Switch to page number pagination mode"
+					aria-pressed={paginationMode === 'pages'}
+				>
+					<span class="hidden md:inline">Mode: Pages</span>
+					<span class="md:hidden">Pages</span>
+				</button>
+			</div>
 		{/if}
 	</nav>
 
@@ -474,7 +510,7 @@
 					</div>
 					{#if ResultsGridComponent}
 						{@const ResultsGrid = ResultsGridComponent}
-						<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+						<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
 							{#each recentlyViewed as rv (rv.book.id)}
 								<div class="card relative group">
 									<button
@@ -496,7 +532,7 @@
 					{/if}
 				</section>
 			{/if}
-			<div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+			<div class="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
 				<div class="lg:col-span-1">
 					<TasteProfile 
 						history={searchHistory} 
@@ -665,7 +701,7 @@
 	<!-- Back to Top Button -->
 	{#if showBackToTop}
 		<button
-			class="fixed bottom-8 right-8 btn btn-primary rounded-full w-12 h-12 p-0 shadow-lg z-50 focus:outline-2 focus:outline-offset-2 focus:outline-academia-gold"
+			class="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 btn btn-primary rounded-full w-10 h-10 sm:w-12 sm:h-12 p-0 shadow-lg z-50 focus:outline-2 focus:outline-offset-2 focus:outline-academia-gold text-lg sm:text-xl"
 			onclick={scrollToTop}
 			aria-label="Scroll back to top of page"
 		>

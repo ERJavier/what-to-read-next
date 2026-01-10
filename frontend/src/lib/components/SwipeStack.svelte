@@ -72,7 +72,7 @@
 </script>
 
 <div 
-	class="relative w-full max-w-md mx-auto h-[600px]"
+	class="relative w-full max-w-md md:max-w-lg lg:max-w-xl mx-auto h-[500px] sm:h-[550px] md:h-[600px] lg:h-[650px] landscape:h-[450px] md:landscape:h-[500px]"
 	role="region"
 	aria-label="Swipeable book cards. Use arrow keys or swipe gestures to navigate."
 >
