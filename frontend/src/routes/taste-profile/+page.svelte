@@ -3,9 +3,12 @@
 	import { goto } from '$app/navigation';
 	import type { SearchHistoryEntry } from '$lib/types';
 	import { getSearchHistory } from '$lib/searchHistory';
-	import EnhancedTasteProfile from '$lib/components/EnhancedTasteProfile.svelte';
+	// Dynamic import for better code splitting - EnhancedTasteProfile is a heavy component
+	import type { Component } from 'svelte';
 
+	let EnhancedTasteProfile: Component<{ history: SearchHistoryEntry[]; onHistoryChange?: () => void }> | null = $state(null);
 	let searchHistory = $state<SearchHistoryEntry[]>([]);
+	let loadingComponent = $state(true);
 
 	function loadSearchHistory() {
 		searchHistory = getSearchHistory();
@@ -13,6 +16,17 @@
 
 	onMount(() => {
 		loadSearchHistory();
+		
+		// Dynamically import the heavy component
+		import('$lib/components/EnhancedTasteProfile.svelte')
+			.then((module) => {
+				EnhancedTasteProfile = module.default;
+				loadingComponent = false;
+			})
+			.catch((error) => {
+				console.error('Failed to load EnhancedTasteProfile component:', error);
+				loadingComponent = false;
+			});
 		
 		// Listen for storage changes to update the list when history changes elsewhere
 		const handleStorageChange = () => {
@@ -58,10 +72,32 @@
 		</button>
 	</nav>
 
-	<main id="main-content" role="main" class="max-w-4xl mx-auto">
-		<EnhancedTasteProfile 
-			history={searchHistory} 
-			onHistoryChange={loadSearchHistory}
-		/>
+	<main id="main-content" class="max-w-4xl mx-auto">
+		{#if loadingComponent}
+			<div class="card text-center py-12">
+				<div class="animate-pulse">
+					<div class="h-8 bg-academia-lighter rounded mb-4 w-3/4 mx-auto"></div>
+					<div class="h-4 bg-academia-lighter rounded mb-2 w-1/2 mx-auto"></div>
+					<div class="h-4 bg-academia-lighter rounded w-2/3 mx-auto"></div>
+				</div>
+				<p class="text-academia-cream/60 text-sm mt-4">Loading taste profile...</p>
+			</div>
+		{:else if EnhancedTasteProfile}
+			{@const Component = EnhancedTasteProfile}
+			<Component 
+				history={searchHistory}
+				onHistoryChange={loadSearchHistory}
+			/>
+		{:else}
+			<div class="card text-center py-8">
+				<p class="text-academia-cream/80 mb-2">Failed to load taste profile component</p>
+				<button 
+					class="btn btn-secondary mt-4"
+					onclick={() => window.location.reload()}
+				>
+					Reload Page
+				</button>
+			</div>
+		{/if}
 	</main>
 </div>
