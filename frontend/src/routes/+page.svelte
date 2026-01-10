@@ -2,19 +2,22 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import type { Book, SearchHistoryEntry, FilterPreferences } from '$lib/types';
+	import type { Component } from 'svelte';
 	import { getRecommendations } from '$lib/api';
 	import { saveBook } from '$lib/storage';
 	import { getSearchHistory, addSearchToHistory } from '$lib/searchHistory';
 	import { getFilterPreferences, saveFilterPreferences } from '$lib/filterPreferences';
 	import { applyFiltersAndSort } from '$lib/filterUtils';
 	import SearchBar from '$lib/components/SearchBar.svelte';
-	import SwipeStack from '$lib/components/SwipeStack.svelte';
-	import ResultsGrid from '$lib/components/ResultsGrid.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 	import ErrorBoundary from '$lib/components/ErrorBoundary.svelte';
 	import TasteProfile from '$lib/components/TasteProfile.svelte';
 	import FilterBar from '$lib/components/FilterBar.svelte';
-	import KeyboardShortcutsModal from '$lib/components/KeyboardShortcutsModal.svelte';
+	
+	// Lazy load heavy components based on view mode
+	let SwipeStackComponent: Component<any> | null = $state(null);
+	let ResultsGridComponent: Component<any> | null = $state(null);
+	let KeyboardShortcutsModalComponent: Component<any> | null = $state(null);
 
 	let searchQuery = $state('');
 	let allBooks = $state<Book[]>([]); // Store all books before filtering
@@ -39,9 +42,6 @@
 	// Apply filters and sorting to books
 	let books = $derived(applyFiltersAndSort(allBooks, filterPreferences));
 
-	// Apply filters and sorting to books
-	let books = $derived(applyFiltersAndSort(allBooks, filterPreferences));
-
 	function loadSearchHistory() {
 		searchHistory = getSearchHistory();
 	}
@@ -50,6 +50,17 @@
 		loadSearchHistory();
 		// Load filter preferences
 		filterPreferences = getFilterPreferences();
+		
+		// Preload components that are likely to be used
+		// Load SwipeStack (default view mode)
+		import('$lib/components/SwipeStack.svelte').then(module => {
+			SwipeStackComponent = module.default;
+		}).catch(err => console.error('Failed to load SwipeStack:', err));
+		
+		// Preload KeyboardShortcutsModal (small component, load early)
+		import('$lib/components/KeyboardShortcutsModal.svelte').then(module => {
+			KeyboardShortcutsModalComponent = module.default;
+		}).catch(err => console.error('Failed to load KeyboardShortcutsModal:', err));
 		
 		// Listen for storage changes to update the list when history changes elsewhere
 		const handleStorageChange = () => {
@@ -85,9 +96,6 @@
 		// Handle keyboard shortcuts
 		window.addEventListener('keydown', handleKeyboardShortcuts);
 		
-		// Handle keyboard shortcuts
-		window.addEventListener('keydown', handleKeyboardShortcuts);
-		
 		return () => {
 			window.removeEventListener('storage', handleStorageChange);
 			window.removeEventListener('scroll', handleScroll);
@@ -96,6 +104,15 @@
 				clearTimeout(scrollTimeout);
 			}
 		};
+	});
+	
+	// Load ResultsGrid when switching to grid view
+	$effect(() => {
+		if (viewMode === 'grid' && !ResultsGridComponent && allBooks.length > 0) {
+			import('$lib/components/ResultsGrid.svelte').then(module => {
+				ResultsGridComponent = module.default;
+			}).catch(err => console.error('Failed to load ResultsGrid:', err));
+		}
 	});
 
 	async function handleSearch(query: string) {
@@ -331,94 +348,89 @@
 		</div>
 	{:else if allBooks.length > 0}
 		<div class="max-w-7xl mx-auto">
-			<FilterBar
-				books={allBooks}
-				preferences={filterPreferences}
-				onPreferencesChange={handleFilterPreferencesChange}
-			/>
-			{#if books.length === 0}
-				<div class="card text-center py-8" role="status" aria-live="polite">
-					<p class="text-academia-cream/60 text-lg mb-2">
-						No books match your current filters.
-					</p>
-					<p class="text-academia-cream/40 text-sm">
-						Try adjusting your filter criteria.
-					</p>
-				</div>
-			{:else}
-		<div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-			<div class="lg:col-span-1">
-				<TasteProfile 
-					history={searchHistory} 
-					onHistoryChange={loadSearchHistory}
-				/>
-			</div>
-			<div class="lg:col-span-3">
-				<FilterBar
-					books={allBooks}
-					preferences={filterPreferences}
-					onPreferencesChange={handleFilterPreferencesChange}
-				/>
-				{#if books.length === 0}
-					<div class="card text-center py-8">
-						<p class="text-academia-cream/60 text-lg mb-2">
-							No books match your current filters.
-						</p>
-						<p class="text-academia-cream/40 text-sm">
-							Try adjusting your filter criteria.
-						</p>
-					</div>
-				{:else}
-				{#if viewMode === 'swipe'}
-					<SwipeStack
-						bind:this={swipeStackRef}
-						{books}
-						onSwipeLeft={handleSwipeLeft}
-						onSwipeRight={handleSwipeRight}
-						onBookClick={handleBookClick}
+			<div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+				<div class="lg:col-span-1">
+					<TasteProfile 
+						history={searchHistory} 
+						onHistoryChange={loadSearchHistory}
 					/>
-				{:else}
-					<ResultsGrid {books} onBookClick={handleBookClick} />
-				{/if}
-				
-				{#if viewMode === 'grid' && books.length > 0}
-					<div class="mt-6 text-center" role="region" aria-label="Pagination controls">
-						{#if paginationMode === 'load-more'}
-							{#if hasMoreResults}
-								<button
-									class="btn btn-primary"
-									onclick={loadMoreBooks}
-									disabled={loadingMore}
-									aria-label={loadingMore ? 'Loading more books' : 'Load more books'}
-									aria-busy={loadingMore}
-								>
-									{loadingMore ? 'Loading...' : 'Load More'}
-								</button>
+				</div>
+				<div class="lg:col-span-3">
+					<FilterBar
+						books={allBooks}
+						preferences={filterPreferences}
+						onPreferencesChange={handleFilterPreferencesChange}
+					/>
+					{#if books.length === 0}
+						<div class="card text-center py-8" role="status" aria-live="polite">
+							<p class="text-academia-cream/60 text-lg mb-2">
+								No books match your current filters.
+							</p>
+							<p class="text-academia-cream/40 text-sm">
+								Try adjusting your filter criteria.
+							</p>
+						</div>
+					{:else}
+						{#if viewMode === 'swipe'}
+							{#if SwipeStackComponent}
+								{@const SwipeStack = SwipeStackComponent}
+								<SwipeStack
+									bind:this={swipeStackRef}
+									{books}
+									onSwipeLeft={handleSwipeLeft}
+									onSwipeRight={handleSwipeRight}
+									onBookClick={handleBookClick}
+								/>
 							{:else}
-								<p class="text-academia-cream/60 text-sm" role="status" aria-live="polite">
-									No more results to load
-								</p>
+								<Loading message="Loading swipe view..." />
 							{/if}
-						{:else if paginationMode === 'infinite-scroll'}
-							{#if loadingMore}
-								<div class="py-4" role="status" aria-live="polite" aria-atomic="true">
-									<Loading message="Loading more books..." />
-								</div>
-							{/if}
-							{#if !hasMoreResults && books.length > INITIAL_LIMIT}
-								<p class="text-academia-cream/60 text-sm py-4" role="status" aria-live="polite">
-									{#if currentLimit >= MAX_LIMIT}
-										You've reached the maximum number of results ({MAX_LIMIT} books). Try refining your search for more specific results.
-									{:else}
-										You've reached the end of the results
-									{/if}
-								</p>
+						{:else}
+							{#if ResultsGridComponent}
+								{@const ResultsGrid = ResultsGridComponent}
+								<ResultsGrid {books} onBookClick={handleBookClick} />
+							{:else}
+								<Loading message="Loading grid view..." />
 							{/if}
 						{/if}
-					</div>
-				{/if}
-			{/if}
-				{/if}
+						
+						{#if viewMode === 'grid' && books.length > 0}
+							<div class="mt-6 text-center" role="region" aria-label="Pagination controls">
+								{#if paginationMode === 'load-more'}
+									{#if hasMoreResults}
+										<button
+											class="btn btn-primary"
+											onclick={loadMoreBooks}
+											disabled={loadingMore}
+											aria-label={loadingMore ? 'Loading more books' : 'Load more books'}
+											aria-busy={loadingMore}
+										>
+											{loadingMore ? 'Loading...' : 'Load More'}
+										</button>
+									{:else}
+										<p class="text-academia-cream/60 text-sm" role="status" aria-live="polite">
+											No more results to load
+										</p>
+									{/if}
+								{:else if paginationMode === 'infinite-scroll'}
+									{#if loadingMore}
+										<div class="py-4" role="status" aria-live="polite" aria-atomic="true">
+											<Loading message="Loading more books..." />
+										</div>
+									{/if}
+									{#if !hasMoreResults && books.length > INITIAL_LIMIT}
+										<p class="text-academia-cream/60 text-sm py-4" role="status" aria-live="polite">
+											{#if currentLimit >= MAX_LIMIT}
+												You've reached the maximum number of results ({MAX_LIMIT} books). Try refining your search for more specific results.
+											{:else}
+												You've reached the end of the results
+											{/if}
+										</p>
+									{/if}
+								{/if}
+							</div>
+						{/if}
+					{/if}
+				</div>
 			</div>
 		</div>
 	{:else if searchQuery}
@@ -450,8 +462,11 @@
 	{/if}
 
 	<!-- Keyboard Shortcuts Modal -->
-	<KeyboardShortcutsModal
-		open={showShortcutsModal}
-		onClose={() => showShortcutsModal = false}
-	/>
+	{#if KeyboardShortcutsModalComponent}
+		{@const KeyboardShortcutsModal = KeyboardShortcutsModalComponent}
+		<KeyboardShortcutsModal
+			open={showShortcutsModal}
+			onClose={() => showShortcutsModal = false}
+		/>
+	{/if}
 </div>

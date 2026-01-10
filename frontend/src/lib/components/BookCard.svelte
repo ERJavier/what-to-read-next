@@ -1,23 +1,32 @@
 <script lang="ts">
 	import type { Book } from '../types';
 	import LazyImage from './LazyImage.svelte';
+	import { getOpenLibraryCoverUrl, getOpenLibraryCoverSrcset, getBookCoverPlaceholder } from '../imageUtils';
 
 	interface Props {
 		book: Book;
 		onSwipeLeft?: () => void;
 		onSwipeRight?: () => void;
 		onClick?: () => void;
+		showCover?: boolean; // Enable/disable book covers
 	}
 
-	let { book, onSwipeLeft, onSwipeRight, onClick }: Props = $props();
+	let { book, onSwipeLeft, onSwipeRight, onClick, showCover = true }: Props = $props();
 	
-	// If book covers are added in the future, this will be used
-	// For now, we'll keep the existing layout without images
-	const bookCoverUrl = $derived(() => {
-		// Future: Generate cover URL from Open Library
-		// Example: `https://covers.openlibrary.org/b/olid/${book.ol_key}-M.jpg`
-		// For now, return null
-		return null;
+	// Generate optimized book cover URLs with responsive srcset
+	const bookCoverImageSource = $derived.by(() => {
+		if (!showCover || !book.ol_key) return null;
+		
+		// Return ImageSource format with srcset for responsive loading
+		return {
+			src: getOpenLibraryCoverUrl(book.ol_key, 'M'), // Default medium size
+			srcset: getOpenLibraryCoverSrcset(book.ol_key)
+		};
+	});
+	
+	const bookCoverPlaceholder = $derived.by(() => {
+		if (!showCover) return undefined;
+		return getBookCoverPlaceholder(book.title);
 	});
 	
 	let x = $state(0);
@@ -88,6 +97,21 @@
 	tabindex="0"
 	aria-label="Book: {book.title} by {book.authors?.join(', ') || 'Unknown author'}. {book.first_publish_year ? `Published in ${book.first_publish_year}. ` : ''}{book.similarity !== undefined ? `Match: ${Math.round(book.similarity * 100)}%. ` : ''}Click to view details, or swipe left for not interested, swipe right for interested."
 >
+	{#if showCover && bookCoverImageSource}
+		<div class="mb-4 w-full aspect-[2/3] overflow-hidden rounded-md bg-academia-lighter">
+			<LazyImage
+				src={[bookCoverImageSource]}
+				alt={`Cover for ${book.title}`}
+				placeholder={bookCoverPlaceholder || undefined}
+				sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+				width="100%"
+				height="100%"
+				class="w-full h-full"
+				loading="lazy"
+			/>
+		</div>
+	{/if}
+	
 	<h2 class="text-2xl font-serif font-bold text-academia-gold mb-2">{book.title}</h2>
 	
 	{#if book.authors && book.authors.length > 0}

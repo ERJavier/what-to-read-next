@@ -12,9 +12,12 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"test": "vitest",
 		"test:ui": "vitest --ui",
-		"test:coverage": "vitest --coverage"
+		"test:coverage": "vitest --coverage",
+		"lighthouse": "node scripts/lighthouse-test.js",
+		"lighthouse:ci": "lhci autorun"
 	},
 	"devDependencies": {
+		"@lhci/cli": "^0.14.0",
 		"@sveltejs/adapter-auto": "^7.0.0",
 		"@sveltejs/kit": "^2.49.1",
 		"@sveltejs/vite-plugin-svelte": "^6.2.1",
@@ -23,7 +26,9 @@
 		"@testing-library/user-event": "^14.6.1",
 		"@vitest/ui": "^4.0.16",
 		"autoprefixer": "^10.4.23",
+		"chrome-launcher": "^1.1.2",
 		"jsdom": "^27.4.0",
+		"lighthouse": "^13.0.0",
 		"postcss": "^8.5.6",
 		"svelte": "^5.45.6",
 		"svelte-check": "^4.3.4",
