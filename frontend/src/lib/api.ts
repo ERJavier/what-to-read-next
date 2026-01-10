@@ -8,6 +8,9 @@ const RECOMMENDATIONS_CACHE_TTL = 10 * 60 * 1000; // 10 minutes - search results
 const BOOK_DETAIL_CACHE_TTL = 30 * 60 * 1000; // 30 minutes - book details are static
 const HEALTH_CACHE_TTL = 1 * 60 * 1000; // 1 minute - health checks should be relatively fresh
 
+// Request deduplication: track in-flight requests to prevent duplicate API calls
+const inFlightRequests = new Map<string, Promise<any>>();
+
 export async function getHealth(): Promise<HealthResponse> {
 	const cached = apiCache.get<HealthResponse>('/health', {});
 	if (cached) {
@@ -36,26 +39,48 @@ export async function getRecommendations(request: RecommendationRequest): Promis
 		return cached;
 	}
 
-	// Fetch from API
-	const response = await fetch(`${API_BASE_URL}/recommend`, {
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json'
-		},
-		body: JSON.stringify(params)
-	});
+	// Generate request key for deduplication
+	const requestKey = `/recommend:${JSON.stringify(params)}`;
 
-	if (!response.ok) {
-		const error = await response.json().catch(() => ({ detail: 'Failed to get recommendations' }));
-		throw new Error(error.detail || 'Failed to get recommendations');
+	// Check if there's an in-flight request with the same parameters
+	if (inFlightRequests.has(requestKey)) {
+		// Return the existing promise to avoid duplicate requests
+		return inFlightRequests.get(requestKey)!;
 	}
 
-	const data = await response.json();
-	
-	// Cache the response
-	apiCache.set('/recommend', params, data, RECOMMENDATIONS_CACHE_TTL);
-	
-	return data;
+	// Create a new request promise
+	const requestPromise = (async () => {
+		try {
+			// Fetch from API
+			const response = await fetch(`${API_BASE_URL}/recommend`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify(params)
+			});
+
+			if (!response.ok) {
+				const error = await response.json().catch(() => ({ detail: 'Failed to get recommendations' }));
+				throw new Error(error.detail || 'Failed to get recommendations');
+			}
+
+			const data = await response.json();
+			
+			// Cache the response
+			apiCache.set('/recommend', params, data, RECOMMENDATIONS_CACHE_TTL);
+			
+			return data;
+		} finally {
+			// Remove from in-flight requests after completion
+			inFlightRequests.delete(requestKey);
+		}
+	})();
+
+	// Store the promise for deduplication
+	inFlightRequests.set(requestKey, requestPromise);
+
+	return requestPromise;
 }
 
 export async function getBookDetail(bookId: number): Promise<BookDetail> {
@@ -67,22 +92,44 @@ export async function getBookDetail(bookId: number): Promise<BookDetail> {
 		return cached;
 	}
 
-	// Fetch from API
-	const response = await fetch(`${API_BASE_URL}/books/${bookId}`);
-	
-	if (!response.ok) {
-		if (response.status === 404) {
-			throw new Error('Book not found');
-		}
-		throw new Error('Failed to fetch book details');
+	// Generate request key for deduplication
+	const requestKey = `/books/${bookId}`;
+
+	// Check if there's an in-flight request with the same bookId
+	if (inFlightRequests.has(requestKey)) {
+		// Return the existing promise to avoid duplicate requests
+		return inFlightRequests.get(requestKey)!;
 	}
 
-	const data = await response.json();
-	
-	// Cache the response (book details are static, so longer TTL)
-	apiCache.set('/books/:id', params, data, BOOK_DETAIL_CACHE_TTL);
-	
-	return data;
+	// Create a new request promise
+	const requestPromise = (async () => {
+		try {
+			// Fetch from API
+			const response = await fetch(`${API_BASE_URL}/books/${bookId}`);
+			
+			if (!response.ok) {
+				if (response.status === 404) {
+					throw new Error('Book not found');
+				}
+				throw new Error('Failed to fetch book details');
+			}
+
+			const data = await response.json();
+			
+			// Cache the response (book details are static, so longer TTL)
+			apiCache.set('/books/:id', params, data, BOOK_DETAIL_CACHE_TTL);
+			
+			return data;
+		} finally {
+			// Remove from in-flight requests after completion
+			inFlightRequests.delete(requestKey);
+		}
+	})();
+
+	// Store the promise for deduplication
+	inFlightRequests.set(requestKey, requestPromise);
+
+	return requestPromise;
 }
 
 /**

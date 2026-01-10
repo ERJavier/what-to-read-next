@@ -3,6 +3,7 @@
 	import type { Book } from '../types';
 	import BookCard from './BookCard.svelte';
 	import Skeleton from './Skeleton.svelte';
+	import { prefetchBookDetails } from '../prefetch';
 
 	interface Props {
 		books: Book[];
@@ -55,29 +56,42 @@
 		}
 		visibleIndices = initialVisible;
 
-		// Use Intersection Observer to track visible items
+		// Use Intersection Observer to track visible items with optimized settings
+		// Use RAF to batch updates for better performance
+		let rafId: number | null = null;
+		const pendingUpdates = new Set<number>();
+		
 		const observer = new IntersectionObserver(
 			(entries) => {
-				const newVisible = new Set(visibleIndices);
-				// Get current books length to handle reactive updates
-				const currentBooksLength = books.length;
-				
+				// Batch updates using requestAnimationFrame
 				entries.forEach((entry) => {
 					const index = parseInt(entry.target.getAttribute('data-index') || '0', 10);
 					if (entry.isIntersecting) {
-						// Mark this item and nearby items as visible (buffer)
+						// Add indices to pending updates
+						const currentBooksLength = books.length;
 						for (let i = Math.max(0, index - 4); i <= Math.min(currentBooksLength - 1, index + 4); i++) {
-							newVisible.add(i);
+							pendingUpdates.add(i);
 						}
 					}
 				});
 				
-				visibleIndices = newVisible;
+				// Schedule update on next animation frame
+				if (rafId === null) {
+					rafId = requestAnimationFrame(() => {
+						if (pendingUpdates.size > 0) {
+							const newVisible = new Set(visibleIndices);
+							pendingUpdates.forEach(index => newVisible.add(index));
+							visibleIndices = newVisible;
+							pendingUpdates.clear();
+						}
+						rafId = null;
+					});
+				}
 			},
 			{
 				root: null,
 				rootMargin: '300px', // Load items 300px before they come into view
-				threshold: 0
+				threshold: [0, 0.1, 0.5, 1.0] // Multiple thresholds for better granularity
 			}
 		);
 
@@ -113,6 +127,9 @@
 			return () => {
 				observer.disconnect();
 				mutationObserver.disconnect();
+				if (rafId !== null) {
+					cancelAnimationFrame(rafId);
+				}
 			};
 		}
 	});
@@ -127,6 +144,21 @@
 				initialVisible.add(i);
 			}
 			visibleIndices = initialVisible;
+		}
+	});
+
+	// Prefetch book details for visible items
+	$effect(() => {
+		if (typeof window !== 'undefined' && books.length > 0 && visibleIndices.size > 0) {
+			// Get visible book IDs and prefetch their detail pages
+			const visibleBookIds = Array.from(visibleIndices)
+				.map(index => books[index]?.id)
+				.filter((id): id is number => id !== undefined)
+				.slice(0, 10); // Limit to first 10 visible items
+			
+			if (visibleBookIds.length > 0) {
+				prefetchBookDetails(visibleBookIds);
+			}
 		}
 	});
 </script>

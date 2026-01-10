@@ -243,16 +243,16 @@ This document tracks the development progress of WhatToRead. Tasks are organized
 - [ ] Add custom theme options (high contrast, sepia, etc.) - Deferred to future enhancement
 
 ### Performance & Optimization
-- [ ] Implement virtual scrolling for large result lists
-- [ ] Optimize image loading with better lazy loading strategies
-- [ ] Add image preloading for next books in swipe stack
-- [ ] Implement intersection observer for better scroll performance
-- [ ] Optimize bundle size by code splitting routes
-- [ ] Add service worker for offline support (PWA)
-- [ ] Implement request deduplication for API calls
-- [ ] Add prefetching for likely navigation targets
-- [ ] Optimize re-renders with better state management
-- [ ] Add performance monitoring and metrics collection
+- [x] Implement virtual scrolling for large result lists - Enhanced virtual scrolling with RAF-batched intersection observer updates
+- [x] Optimize image loading with better lazy loading strategies - Improved LazyImage component with better thresholds and fetch priority hints
+- [x] Add image preloading for next books in swipe stack - Image preloader utility with preloading for next books in swipe stack
+- [x] Implement intersection observer for better scroll performance - Optimized intersection observer with RAF batching and multiple thresholds
+- [x] Optimize bundle size by code splitting routes - Enhanced route-based code splitting with separate chunks for routes, components, and utilities
+- [x] Add service worker for offline support (PWA) - Service worker with network-first and cache-first strategies, manifest.json for PWA
+- [x] Implement request deduplication for API calls - Request deduplication system to prevent duplicate API calls for same requests
+- [x] Add prefetching for likely navigation targets - Prefetch utilities with intelligent prefetching for common routes and book details
+- [x] Optimize re-renders with better state management - Memoized derived state and optimized state updates to prevent unnecessary re-renders
+- [x] Add performance monitoring and metrics collection - Performance monitoring system with metrics collection for page load, navigation, and custom operations
 
 ### Social & Sharing Features
 - [ ] Add share book recommendations functionality

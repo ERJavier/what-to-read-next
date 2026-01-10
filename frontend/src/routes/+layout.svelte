@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
-	import favicon from '$lib/assets/favicon.svg';
+	import favicon from '$lib/assets/favicon.png';
 	import { initTheme, watchSystemTheme } from '$lib/theme';
+	import { initServiceWorker } from '$lib/serviceWorker';
 	import '../app.css';
 
 	let { children } = $props();
@@ -13,9 +14,12 @@
 			initTheme();
 			
 			// Watch for system theme changes
-			return watchSystemTheme(() => {
+			watchSystemTheme(() => {
 				// Theme will be reapplied automatically by the watcher
 			});
+			
+			// Initialize service worker for PWA support
+			initServiceWorker();
 		}
 	});
 </script>

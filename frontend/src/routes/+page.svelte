@@ -9,6 +9,8 @@
 	import { getFilterPreferences, saveFilterPreferences } from '$lib/filterPreferences';
 	import { applyFiltersAndSort } from '$lib/filterUtils';
 	import { getRecentlyViewedBooks, removeFromRecentlyViewed, clearRecentlyViewed } from '$lib/recentlyViewed';
+	import { prefetchBookDetails } from '$lib/prefetch';
+	import { performanceMonitor } from '$lib/performance';
 	import SearchBar from '$lib/components/SearchBar.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 	import ErrorBoundary from '$lib/components/ErrorBoundary.svelte';
@@ -47,11 +49,30 @@
 	let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
 	let showMobileNav = $state(false);
 
-	// Apply filters and sorting to books
+	// Apply filters and sorting to books with memoization
+	// Use derived state to avoid unnecessary recalculations
 	let books = $derived(applyFiltersAndSort(allBooks, filterPreferences));
 	let currentPage = $derived(Math.ceil(currentLimit / INITIAL_LIMIT));
 	let totalPages = $derived(Math.ceil(MAX_LIMIT / INITIAL_LIMIT));
-	let pageNumbers = $derived(Array.from({ length: Math.min(totalPages, 10) }, (_, i) => i + 1));
+	
+	// Memoize page numbers calculation to avoid recreating array on every render
+	let pageNumbers = $derived.by(() => {
+		const total = Math.ceil(MAX_LIMIT / INITIAL_LIMIT);
+		const maxVisible = 10;
+		const current = Math.ceil(currentLimit / INITIAL_LIMIT);
+		
+		// Only recalculate if current page or total pages changed
+		if (total <= maxVisible) {
+			return Array.from({ length: total }, (_, i) => i + 1);
+		}
+		
+		// Calculate visible page range
+		const start = Math.max(1, current - Math.floor(maxVisible / 2));
+		const end = Math.min(total, start + maxVisible - 1);
+		const actualStart = Math.max(1, end - maxVisible + 1);
+		
+		return Array.from({ length: end - actualStart + 1 }, (_, i) => actualStart + i);
+	});
 
 	function loadSearchHistory() {
 		searchHistory = getSearchHistory();
@@ -89,6 +110,13 @@
 		import('$lib/components/KeyboardShortcutsModal.svelte').then(module => {
 			KeyboardShortcutsModalComponent = module.default;
 		}).catch(err => console.error('Failed to load KeyboardShortcutsModal:', err));
+		
+		// Prefetch common navigation routes in the background
+		import('$lib/prefetch').then(({ setupIntelligentPrefetching }) => {
+			setupIntelligentPrefetching();
+		}).catch(() => {
+			// Silently fail - prefetching is an optimization
+		});
 		
 		// Listen for storage changes to update the list when history changes elsewhere
 		const handleStorageChange = () => {
@@ -155,8 +183,20 @@
 		hasMoreResults = false; // Reset until we know otherwise
 		
 		try {
-			const results = await getRecommendations({ query, limit: searchLimit });
+			// Measure search performance
+			const results = await performanceMonitor.measure('search', () => {
+				return getRecommendations({ query, limit: searchLimit });
+			});
+			
 			allBooks = results; // Store all books, filtering will be applied reactively
+			
+			// Prefetch book detail pages for first batch of results
+			if (results.length > 0) {
+				const bookIdsToPrefetch = results.slice(0, 10).map(book => book.id).filter(id => id !== undefined) as number[];
+				if (bookIdsToPrefetch.length > 0) {
+					prefetchBookDetails(bookIdsToPrefetch);
+				}
+			}
 			
 			// Check if there might be more results (if we got exactly the requested amount)
 			hasMoreResults = results.length === searchLimit && searchLimit < MAX_LIMIT;

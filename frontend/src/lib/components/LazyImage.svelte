@@ -138,54 +138,64 @@
 		if (typeof window === 'undefined' || !containerElement) return;
 
 		// Use Intersection Observer for lazy loading (more control than native)
+		// Optimized with better threshold and rootMargin
 		const observer = new IntersectionObserver(
 			(entries) => {
-					entries.forEach((entry) => {
-						if (entry.isIntersecting) {
-							isInView = true;
-							// Start loading the image
-							if (!isLoaded && imageSources.length > 0 && !hasError) {
-								// Use the first source (WebP if available and supported, or fallback)
-								const sourceToLoad = supportsWebP && imageSources.length > 1 
-									? imageSources[0] 
-									: imageSources[imageSources.length - 1];
-								
-								const img = new Image();
-								img.onload = () => {
-									imageSrc = sourceToLoad.src;
-									isLoaded = true;
-									hasError = false;
-								};
-								img.onerror = () => {
-									// If WebP fails, try fallback
-									if (supportsWebP && imageSources.length > 1 && sourceToLoad === imageSources[0]) {
-										const fallback = imageSources[imageSources.length - 1];
-										const fallbackImg = new Image();
-										fallbackImg.onload = () => {
-											imageSrc = fallback.src;
-											isLoaded = true;
-											hasError = false;
-										};
-										fallbackImg.onerror = () => {
-											hasError = true;
-											isLoaded = false;
-										};
-										fallbackImg.src = fallback.src;
-									} else {
+				entries.forEach((entry) => {
+					if (entry.isIntersecting) {
+						isInView = true;
+						// Start loading the image
+						if (!isLoaded && imageSources.length > 0 && !hasError) {
+							// Use the first source (WebP if available and supported, or fallback)
+							const sourceToLoad = supportsWebP && imageSources.length > 1 
+								? imageSources[0] 
+								: imageSources[imageSources.length - 1];
+							
+							const img = new Image();
+							
+							// Set fetch priority for better loading performance
+							if ('fetchPriority' in img) {
+								(img as any).fetchPriority = isInView ? 'high' : 'low';
+							}
+							
+							img.onload = () => {
+								imageSrc = sourceToLoad.src;
+								isLoaded = true;
+								hasError = false;
+							};
+							img.onerror = () => {
+								// If WebP fails, try fallback
+								if (supportsWebP && imageSources.length > 1 && sourceToLoad === imageSources[0]) {
+									const fallback = imageSources[imageSources.length - 1];
+									const fallbackImg = new Image();
+									fallbackImg.onload = () => {
+										imageSrc = fallback.src;
+										isLoaded = true;
+										hasError = false;
+									};
+									fallbackImg.onerror = () => {
 										hasError = true;
 										isLoaded = false;
-									}
-								};
-								img.src = sourceToLoad.src;
-							}
+									};
+									fallbackImg.src = fallback.src;
+								} else {
+									hasError = true;
+									isLoaded = false;
+								}
+							};
+							img.src = sourceToLoad.src;
+						}
+						// Once loaded, we can unobserve to save resources
+						if (isLoaded || hasError) {
 							observer.unobserve(containerElement!);
 						}
-					});
+					}
+				});
 			},
 			{
 				root: null,
-				rootMargin: '50px', // Start loading 50px before image comes into view
-				threshold: 0.01
+				rootMargin: '100px', // Start loading 100px before image comes into view (increased for better perceived performance)
+				threshold: [0, 0.01, 0.1] // Multiple thresholds for better granularity
 			}
 		);
 

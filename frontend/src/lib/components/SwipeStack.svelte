@@ -1,6 +1,8 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import type { Book } from '../types';
 	import BookCard from './BookCard.svelte';
+	import { preloadBookCovers } from '../imagePreloader';
 
 	interface Props {
 		books: Book[];
@@ -14,7 +16,26 @@
 	let currentIndex = $state(0);
 	let swipeDirection = $state<'left' | 'right' | null>(null);
 	let showFeedback = $state(false);
-	const visibleBooks = $derived(books.slice(currentIndex, currentIndex + 3));
+	
+	// Memoize visible books to avoid recreating array on every render
+	const visibleBooks = $derived.by(() => {
+		if (books.length === 0) return [];
+		const endIndex = Math.min(currentIndex + 3, books.length);
+		return books.slice(currentIndex, endIndex);
+	});
+
+	// Preload images for next books when index changes
+	$effect(() => {
+		if (typeof window !== 'undefined' && books.length > 0 && currentIndex < books.length) {
+			// Preload next 3-5 books in the background
+			preloadBookCovers(books, currentIndex + 1, 5).catch(err => {
+				// Silently fail - preloading is a performance optimization, not critical
+				if (import.meta.env.DEV) {
+					console.debug('Failed to preload book covers', err);
+				}
+			});
+		}
+	});
 	
 	function handleSwipeLeft(book: Book) {
 		swipeDirection = 'left';
