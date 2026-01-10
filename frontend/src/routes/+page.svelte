@@ -12,6 +12,7 @@
 	import ResultsGrid from '$lib/components/ResultsGrid.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 	import ErrorBoundary from '$lib/components/ErrorBoundary.svelte';
+	import TasteProfile from '$lib/components/TasteProfile.svelte';
 	import FilterBar from '$lib/components/FilterBar.svelte';
 	import KeyboardShortcutsModal from '$lib/components/KeyboardShortcutsModal.svelte';
 
@@ -34,6 +35,9 @@
 	const INITIAL_LIMIT = 20;
 	const LOAD_MORE_INCREMENT = 20;
 	const MAX_LIMIT = 100; // Match API's maximum limit (defined in RecommendationRequest model)
+
+	// Apply filters and sorting to books
+	let books = $derived(applyFiltersAndSort(allBooks, filterPreferences));
 
 	// Apply filters and sorting to books
 	let books = $derived(applyFiltersAndSort(allBooks, filterPreferences));
@@ -81,6 +85,9 @@
 		// Handle keyboard shortcuts
 		window.addEventListener('keydown', handleKeyboardShortcuts);
 		
+		// Handle keyboard shortcuts
+		window.addEventListener('keydown', handleKeyboardShortcuts);
+		
 		return () => {
 			window.removeEventListener('storage', handleStorageChange);
 			window.removeEventListener('scroll', handleScroll);
@@ -116,6 +123,7 @@
 		} catch (e) {
 			const errorMessage = e instanceof Error ? e.message : 'Failed to search';
 			error = new Error(errorMessage);
+			error = e instanceof Error ? e : new Error('Failed to search');
 			allBooks = [];
 			hasMoreResults = false;
 		} finally {
@@ -338,6 +346,29 @@
 					</p>
 				</div>
 			{:else}
+		<div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+			<div class="lg:col-span-1">
+				<TasteProfile 
+					history={searchHistory} 
+					onHistoryChange={loadSearchHistory}
+				/>
+			</div>
+			<div class="lg:col-span-3">
+				<FilterBar
+					books={allBooks}
+					preferences={filterPreferences}
+					onPreferencesChange={handleFilterPreferencesChange}
+				/>
+				{#if books.length === 0}
+					<div class="card text-center py-8">
+						<p class="text-academia-cream/60 text-lg mb-2">
+							No books match your current filters.
+						</p>
+						<p class="text-academia-cream/40 text-sm">
+							Try adjusting your filter criteria.
+						</p>
+					</div>
+				{:else}
 				{#if viewMode === 'swipe'}
 					<SwipeStack
 						bind:this={swipeStackRef}
@@ -387,6 +418,8 @@
 					</div>
 				{/if}
 			{/if}
+				{/if}
+			</div>
 		</div>
 	{:else if searchQuery}
 		<div class="text-center py-12" role="status" aria-live="polite">
