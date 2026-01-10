@@ -12,20 +12,36 @@
 	let { books, onSwipeLeft, onSwipeRight, onBookClick }: Props = $props();
 	
 	let currentIndex = $state(0);
+	let swipeDirection = $state<'left' | 'right' | null>(null);
+	let showFeedback = $state(false);
 	const visibleBooks = $derived(books.slice(currentIndex, currentIndex + 3));
 	
 	function handleSwipeLeft(book: Book) {
+		swipeDirection = 'left';
+		showFeedback = true;
 		onSwipeLeft?.(book);
-		if (currentIndex < books.length - 1) {
-			currentIndex++;
-		}
+		
+		setTimeout(() => {
+			if (currentIndex < books.length - 1) {
+				currentIndex++;
+			}
+			showFeedback = false;
+			swipeDirection = null;
+		}, 300);
 	}
 	
 	function handleSwipeRight(book: Book) {
+		swipeDirection = 'right';
+		showFeedback = true;
 		onSwipeRight?.(book);
-		if (currentIndex < books.length - 1) {
-			currentIndex++;
-		}
+		
+		setTimeout(() => {
+			if (currentIndex < books.length - 1) {
+				currentIndex++;
+			}
+			showFeedback = false;
+			swipeDirection = null;
+		}, 300);
 	}
 
 	// Expose methods for keyboard shortcuts
@@ -60,6 +76,58 @@
 	role="region"
 	aria-label="Swipeable book cards. Use arrow keys or swipe gestures to navigate."
 >
+	<!-- Visual Feedback Overlay -->
+	{#if showFeedback && swipeDirection}
+		<div 
+			class="absolute inset-0 z-50 flex items-center justify-center pointer-events-none transition-opacity duration-300 {showFeedback ? 'opacity-100' : 'opacity-0'}"
+			aria-hidden="true"
+		>
+			{#if swipeDirection === 'right'}
+				<div class="bg-green-900/80 rounded-full p-8 border-4 border-green-500 shadow-2xl transform scale-110">
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+					</svg>
+					<p class="text-center text-green-300 font-bold mt-2 text-lg">Interested!</p>
+				</div>
+			{:else if swipeDirection === 'left'}
+				<div class="bg-red-900/80 rounded-full p-8 border-4 border-red-500 shadow-2xl transform scale-110">
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" />
+					</svg>
+					<p class="text-center text-red-300 font-bold mt-2 text-lg">Not Interested</p>
+				</div>
+			{/if}
+		</div>
+	{/if}
+
+	<!-- Progress Indicator -->
+	{#if books.length > 0}
+		<div class="absolute top-4 left-1/2 -translate-x-1/2 z-40 bg-academia-dark/80 backdrop-blur-sm rounded-full px-4 py-2 border border-academia-lighter">
+			<p class="text-xs text-academia-cream/80 font-medium">
+				{currentIndex + 1} / {books.length}
+			</p>
+		</div>
+	{/if}
+
+	<!-- Swipe Hint -->
+	{#if visibleBooks.length > 0 && currentIndex === 0 && !showFeedback}
+		<div class="absolute bottom-4 left-1/2 -translate-x-1/2 z-40 bg-academia-dark/80 backdrop-blur-sm rounded-full px-4 py-2 border border-academia-lighter flex items-center gap-3 text-xs text-academia-cream/70">
+			<span class="flex items-center gap-1">
+				<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+				</svg>
+				Swipe left
+			</span>
+			<span class="text-academia-cream/40">•</span>
+			<span class="flex items-center gap-1">
+				Swipe right
+				<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+				</svg>
+			</span>
+		</div>
+	{/if}
+
 	{#each visibleBooks as book, i (book.id)}
 		{@const zIndex = visibleBooks.length - i}
 		{@const scale = 1 - (i * 0.05)}

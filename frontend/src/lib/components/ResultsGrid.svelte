@@ -2,19 +2,24 @@
 	import { onMount } from 'svelte';
 	import type { Book } from '../types';
 	import BookCard from './BookCard.svelte';
+	import Skeleton from './Skeleton.svelte';
 
 	interface Props {
 		books: Book[];
 		onBookClick?: (book: Book) => void;
 		enableVirtualization?: boolean; // Enable virtual scrolling for large lists
 		virtualizationThreshold?: number; // Number of items before virtualization kicks in
+		loading?: boolean; // Show loading skeletons
+		cardSize?: 'small' | 'medium' | 'large'; // Adjustable card sizes
 	}
 
 	let { 
 		books, 
 		onBookClick, 
 		enableVirtualization = true,
-		virtualizationThreshold = 50 // Enable virtualization for 50+ items
+		virtualizationThreshold = 50, // Enable virtualization for 50+ items
+		loading = false,
+		cardSize = 'medium'
 	}: Props = $props();
 
 	let containerElement: HTMLDivElement | null = $state(null);
@@ -24,6 +29,20 @@
 	const shouldVirtualize = $derived(
 		enableVirtualization && books.length >= virtualizationThreshold
 	);
+
+	// Grid column classes based on card size
+	const gridClasses = $derived.by(() => {
+		const baseClasses = 'grid gap-6';
+		switch (cardSize) {
+			case 'small':
+				return `${baseClasses} grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6`;
+			case 'large':
+				return `${baseClasses} grid-cols-1 md:grid-cols-2 lg:grid-cols-3`;
+			case 'medium':
+			default:
+				return `${baseClasses} grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4`;
+		}
+	});
 
 	onMount(() => {
 		if (!shouldVirtualize || typeof window === 'undefined' || !containerElement) return;
@@ -112,35 +131,49 @@
 	});
 </script>
 
-<div 
-	bind:this={containerElement}
-	class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-	role="region"
-	aria-label="Book results grid"
->
-	{#each books as book, index (book.id)}
-		{@const shouldRender = !shouldVirtualize || visibleIndices.has(index)}
-		
-		{#if shouldRender}
-			<div data-index={index}>
-				<BookCard
-					{book}
-					onClick={() => onBookClick?.(book)}
-				/>
-			</div>
-		{:else}
-			<!-- Placeholder to maintain grid layout and enable intersection observer -->
-			<div 
-				data-index={index}
-				class="invisible pointer-events-none"
-				style="min-height: 250px;"
-				aria-hidden="true"
-			></div>
-		{/if}
-	{/each}
-</div>
+{#if loading}
+	<div 
+		bind:this={containerElement}
+		class={gridClasses}
+		role="region"
+		aria-label="Loading book results"
+		aria-busy="true"
+	>
+		{#each Array(12) as _}
+			<Skeleton variant="card" height={cardSize === 'small' ? '300px' : cardSize === 'large' ? '500px' : '400px'} />
+		{/each}
+	</div>
+{:else}
+	<div 
+		bind:this={containerElement}
+		class={gridClasses}
+		role="region"
+		aria-label="Book results grid"
+	>
+		{#each books as book, index (book.id)}
+			{@const shouldRender = !shouldVirtualize || visibleIndices.has(index)}
+			
+			{#if shouldRender}
+				<div data-index={index} class={cardSize === 'small' ? 'text-sm' : cardSize === 'large' ? 'text-base' : ''}>
+					<BookCard
+						{book}
+						onClick={() => onBookClick?.(book)}
+					/>
+				</div>
+			{:else}
+				<!-- Placeholder to maintain grid layout and enable intersection observer -->
+				<div 
+					data-index={index}
+					class="invisible pointer-events-none"
+					style="min-height: {cardSize === 'small' ? '200px' : cardSize === 'large' ? '400px' : '250px'};"
+					aria-hidden="true"
+				></div>
+			{/if}
+		{/each}
+	</div>
+{/if}
 
-{#if books.length === 0}
+{#if !loading && books.length === 0}
 	<div class="text-center py-12" role="status" aria-live="polite">
 		<p class="text-academia-cream/60 text-lg">No books found. Try a different search.</p>
 	</div>

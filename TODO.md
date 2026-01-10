@@ -197,16 +197,16 @@ This document tracks the development progress of WhatToRead. Tasks are organized
 - [ ] Add keyboard navigation improvements (Tab order, focus management)
 
 ### Component Refinements
-- [ ] Enhance BookCard component with more book metadata display
-- [ ] Improve BookDetailModal with better layout and readability
-- [ ] Add skeleton loading states to all components
-- [ ] Refine FilterBar with better visual grouping
-- [ ] Improve SearchBar with search suggestions dropdown
-- [ ] Enhance TasteProfile component with interactive charts
-- [ ] Add tooltips to filter options explaining what they do
-- [ ] Improve ResultsGrid with adjustable card sizes
-- [ ] Add export/print functionality for saved books
-- [ ] Enhance SwipeStack with better visual feedback
+- [x] Enhance BookCard component with more book metadata display
+- [x] Improve BookDetailModal with better layout and readability
+- [x] Add skeleton loading states to all components
+- [x] Refine FilterBar with better visual grouping
+- [x] Improve SearchBar with search suggestions dropdown
+- [x] Enhance TasteProfile component with interactive charts
+- [x] Add tooltips to filter options explaining what they do
+- [x] Improve ResultsGrid with adjustable card sizes
+- [x] Add export/print functionality for saved books
+- [x] Enhance SwipeStack with better visual feedback
 
 ### Responsive Design
 - [ ] Optimize swipe view for tablets (iPad, etc.)
@@ -234,13 +234,13 @@ This document tracks the development progress of WhatToRead. Tasks are organized
 - [ ] Test with VoiceOver, NVDA, and JAWS screen readers
 
 ### Dark Mode & Theming
-- [ ] Implement theme toggle (dark/light mode)
-- [ ] Add theme persistence (localStorage)
-- [ ] Create light mode color palette
-- [ ] Test contrast ratios in both themes
-- [ ] Add smooth theme transition animations
-- [ ] Respect system preference (prefers-color-scheme)
-- [ ] Add custom theme options (high contrast, sepia, etc.)
+- [x] Implement theme toggle (dark/light mode)
+- [x] Add theme persistence (localStorage)
+- [x] Create light mode color palette
+- [x] Test contrast ratios in both themes
+- [x] Add smooth theme transition animations
+- [x] Respect system preference (prefers-color-scheme)
+- [ ] Add custom theme options (high contrast, sepia, etc.) - Deferred to future enhancement
 
 ### Performance & Optimization
 - [ ] Implement virtual scrolling for large result lists

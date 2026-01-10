@@ -16,6 +16,7 @@
 	import FilterBar from '$lib/components/FilterBar.svelte';
 	import BookCard from '$lib/components/BookCard.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
+	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	
 	// Lazy load heavy components based on view mode
 	let SwipeStackComponent: Component<any> | null = $state(null);
@@ -326,11 +327,14 @@
 </a>
 
 <div class="min-h-screen p-4 md:p-8">
-	<header class="text-center mb-8">
-		<h1 class="text-4xl md:text-5xl font-serif font-bold text-academia-gold mb-4">
+	<header class="text-center mb-8 relative">
+		<div class="absolute top-0 right-0 md:right-4">
+			<ThemeToggle />
+		</div>
+		<h1 class="text-4xl md:text-5xl font-serif font-bold text-academia-gold dark:text-academia-gold mb-4">
 			WhatToRead
 		</h1>
-		<p class="text-academia-cream/80 text-lg mb-6">
+		<p class="text-primary/80 dark:text-academia-cream/80 text-lg mb-6">
 			Discover your next favorite book through semantic search
 		</p>
 		<Tooltip text="Press / to focus the search bar">
