@@ -5,6 +5,7 @@ export interface Book {
 	authors: string[];
 	first_publish_year: number | null;
 	subjects: string[];
+	cover_url?: string | null;
 	similarity?: number;
 	search_content?: string;
 }

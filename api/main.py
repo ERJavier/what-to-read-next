@@ -1,6 +1,7 @@
 """
 WhatToRead API - FastAPI Application
 """
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 
@@ -10,6 +11,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 
+from api.author_enrichment import close_http_client, enrich_author_names
+from api.cover_enrichment import get_cover_url
 from api.cache import (
     clear_book_cache,
     clear_recommendation_cache,
@@ -61,6 +64,7 @@ async def lifespan(app: FastAPI):
     # Shutdown
     logger.info("🛑 Shutting down WhatToRead API...")
     await close_db_pool()
+    await close_http_client()
     logger.info("✅ API shutdown complete")
 
 
@@ -258,17 +262,25 @@ async def get_recommendations(request: RecommendationRequest):
                 metric.status_code = 200
                 return empty_result
             
-            # Format response
+            # Format response and enrich author names and cover URLs
             books = []
-            for row in results:
+            # Fetch covers in parallel for better performance
+            cover_urls = await asyncio.gather(*[get_cover_url(row[1]) for row in results])
+            
+            for idx, row in enumerate(results):
                 book_id, ol_key, title, authors, year, subjects, similarity = row
+                # Enrich author names from Open Library API if needed
+                enriched_authors = await enrich_author_names(authors or [])
+                # Use pre-fetched cover URL
+                cover_url = cover_urls[idx]
                 books.append(BookResponse(
                     id=book_id,
                     ol_key=ol_key,
                     title=title,
-                    authors=authors or [],
+                    authors=enriched_authors,
                     first_publish_year=year,
                     subjects=subjects or [],
+                    cover_url=cover_url,
                     similarity=float(similarity)
                 ))
             
@@ -329,13 +341,19 @@ async def get_book(book_id: int):
             
             book_id, ol_key, title, authors, year, subjects, search_content = book
             
+            # Enrich author names from Open Library API if needed
+            enriched_authors = await enrich_author_names(authors or [])
+            # Fetch cover URL from work's first edition
+            cover_url = await get_cover_url(ol_key)
+            
             book_detail = BookDetailResponse(
                 id=book_id,
                 ol_key=ol_key,
                 title=title,
-                authors=authors or [],
+                authors=enriched_authors,
                 first_publish_year=year,
                 subjects=subjects or [],
+                cover_url=cover_url,
                 search_content=search_content
             )
             

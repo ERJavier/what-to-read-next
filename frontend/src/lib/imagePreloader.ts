@@ -146,7 +146,7 @@ export const imagePreloader = new ImagePreloader(5);
  * Preload book cover images for next N books in swipe stack
  */
 export async function preloadBookCovers(
-	books: Array<{ ol_key?: string }>,
+	books: Array<{ ol_key?: string; cover_url?: string | null }>,
 	startIndex: number,
 	count: number = 3
 ): Promise<void> {
@@ -156,12 +156,21 @@ export async function preloadBookCovers(
 	
 	for (let i = 0; i < count && startIndex + i < books.length; i++) {
 		const book = books[startIndex + i];
-		if (book.ol_key) {
-			// Preload medium size cover (most likely to be displayed next)
-			const coverUrl = `https://covers.openlibrary.org/b/olid/${book.ol_key}-M.jpg`;
-			if (!imagePreloader.isPreloaded(coverUrl)) {
-				urls.push(coverUrl);
+		
+		// Use cover_url from API if available, otherwise generate from ol_key
+		let coverUrl: string | undefined;
+		if (book.cover_url) {
+			coverUrl = book.cover_url;
+		} else if (book.ol_key) {
+			// Fallback: Generate from ol_key (extract work ID)
+			const workId = book.ol_key.replace(/^\/works\//, '').replace(/\//g, '');
+			if (workId) {
+				coverUrl = `https://covers.openlibrary.org/b/olid/${workId}-M.jpg`;
 			}
+		}
+		
+		if (coverUrl && !imagePreloader.isPreloaded(coverUrl)) {
+			urls.push(coverUrl);
 		}
 	}
 
