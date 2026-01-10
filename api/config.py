@@ -35,7 +35,9 @@ class Settings(BaseSettings):
     # API
     api_host: str = "0.0.0.0"
     api_port: int = 8000
-    cors_origins: list[str] = ["*"]
+    # CORS origins: Use ["*"] for development, or specify exact origins for production
+    # Note: ["*"] cannot be used with allow_credentials=True
+    cors_origins: list[str] = ["http://localhost:5173", "http://localhost:4173", "http://localhost:3000"]
     
     # Logging
     log_level: str = "INFO"
