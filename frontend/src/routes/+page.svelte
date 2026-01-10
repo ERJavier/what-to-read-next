@@ -248,6 +248,14 @@
 	<title>WhatToRead - Discover Your Next Book</title>
 </svelte:head>
 
+<!-- Skip to main content link for screen readers -->
+<a
+	href="#main-content"
+	class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-academia-gold focus:text-academia-dark focus:rounded focus:font-semibold"
+>
+	Skip to main content
+</a>
+
 <div class="min-h-screen p-4 md:p-8">
 	<header class="text-center mb-8">
 		<h1 class="text-4xl md:text-5xl font-serif font-bold text-academia-gold mb-4">
@@ -259,47 +267,65 @@
 		<SearchBar bind:this={searchBarRef} onSearch={handleSearch} />
 	</header>
 
-	<div class="flex gap-4 mb-6 justify-center flex-wrap">
+	<nav aria-label="View and navigation options" class="flex gap-4 mb-6 justify-center flex-wrap">
 		<button
 			class="btn {viewMode === 'swipe' ? 'btn-primary' : 'btn-secondary'}"
 			onclick={() => viewMode = 'swipe'}
+			aria-label="Switch to swipe view mode"
+			aria-pressed={viewMode === 'swipe'}
 		>
 			Swipe
 		</button>
 		<button
 			class="btn {viewMode === 'grid' ? 'btn-primary' : 'btn-secondary'}"
 			onclick={() => viewMode = 'grid'}
+			aria-label="Switch to grid view mode"
+			aria-pressed={viewMode === 'grid'}
 		>
 			Grid
 		</button>
-		<button class="btn btn-secondary" onclick={() => goto('/saved')}>
+		<button 
+			class="btn btn-secondary" 
+			onclick={() => goto('/saved')}
+			aria-label="View saved books"
+		>
 			Saved Books
 		</button>
-		<button class="btn btn-secondary" onclick={() => goto('/taste-profile')}>
+		<button 
+			class="btn btn-secondary" 
+			onclick={() => goto('/taste-profile')}
+			aria-label="View your taste profile"
+		>
 			Taste Profile
 		</button>
 		{#if allBooks.length > 0}
 			<button
 				class="btn {paginationMode === 'load-more' ? 'btn-primary' : 'btn-secondary'}"
 				onclick={() => paginationMode = 'load-more'}
-				title="Click 'Load More' button to see additional results"
+				aria-label="Switch to load more pagination mode. Click 'Load More' button to see additional results"
+				aria-pressed={paginationMode === 'load-more'}
 			>
 				Mode: Load More
 			</button>
 			<button
 				class="btn {paginationMode === 'infinite-scroll' ? 'btn-primary' : 'btn-secondary'}"
 				onclick={() => paginationMode = 'infinite-scroll'}
-				title="Automatically load more as you scroll down"
+				aria-label="Switch to infinite scroll pagination mode. Automatically loads more as you scroll down"
+				aria-pressed={paginationMode === 'infinite-scroll'}
 			>
 				Mode: Auto Scroll
 			</button>
 		{/if}
-	</div>
+	</nav>
+
+	<main id="main-content" role="main">
 
 	{#if loading}
-		<Loading message="Finding your perfect books..." />
+		<div role="status" aria-live="polite" aria-atomic="true">
+			<Loading message="Finding your perfect books..." />
+		</div>
 	{:else if error}
-		<div class="card bg-red-900/20 border-red-500 max-w-2xl mx-auto mb-6">
+		<div class="card bg-red-900/20 border-red-500 max-w-2xl mx-auto mb-6" role="alert" aria-live="assertive">
 			<h2 class="text-xl font-bold text-red-400 mb-2">Error</h2>
 			<p class="text-red-300">{error.message}</p>
 		</div>
@@ -311,7 +337,7 @@
 				onPreferencesChange={handleFilterPreferencesChange}
 			/>
 			{#if books.length === 0}
-				<div class="card text-center py-8">
+				<div class="card text-center py-8" role="status" aria-live="polite">
 					<p class="text-academia-cream/60 text-lg mb-2">
 						No books match your current filters.
 					</p>
@@ -356,29 +382,31 @@
 				{/if}
 				
 				{#if viewMode === 'grid' && books.length > 0}
-					<div class="mt-6 text-center">
+					<div class="mt-6 text-center" role="region" aria-label="Pagination controls">
 						{#if paginationMode === 'load-more'}
 							{#if hasMoreResults}
 								<button
 									class="btn btn-primary"
 									onclick={loadMoreBooks}
 									disabled={loadingMore}
+									aria-label={loadingMore ? 'Loading more books' : 'Load more books'}
+									aria-busy={loadingMore}
 								>
 									{loadingMore ? 'Loading...' : 'Load More'}
 								</button>
 							{:else}
-								<p class="text-academia-cream/60 text-sm">
+								<p class="text-academia-cream/60 text-sm" role="status" aria-live="polite">
 									No more results to load
 								</p>
 							{/if}
 						{:else if paginationMode === 'infinite-scroll'}
 							{#if loadingMore}
-								<div class="py-4">
+								<div class="py-4" role="status" aria-live="polite" aria-atomic="true">
 									<Loading message="Loading more books..." />
 								</div>
 							{/if}
 							{#if !hasMoreResults && books.length > INITIAL_LIMIT}
-								<p class="text-academia-cream/60 text-sm py-4">
+								<p class="text-academia-cream/60 text-sm py-4" role="status" aria-live="polite">
 									{#if currentLimit >= MAX_LIMIT}
 										You've reached the maximum number of results ({MAX_LIMIT} books). Try refining your search for more specific results.
 									{:else}
@@ -394,7 +422,7 @@
 			</div>
 		</div>
 	{:else if searchQuery}
-		<div class="text-center py-12">
+		<div class="text-center py-12" role="status" aria-live="polite">
 			<p class="text-academia-cream/60 text-lg">No books found. Try a different search.</p>
 		</div>
 	{:else}
@@ -408,16 +436,16 @@
 			</p>
 		</div>
 	{/if}
+	</main>
 
 	<!-- Back to Top Button -->
 	{#if showBackToTop}
 		<button
-			class="fixed bottom-8 right-8 btn btn-primary rounded-full w-12 h-12 p-0 shadow-lg z-50"
+			class="fixed bottom-8 right-8 btn btn-primary rounded-full w-12 h-12 p-0 shadow-lg z-50 focus:outline-2 focus:outline-offset-2 focus:outline-academia-gold"
 			onclick={scrollToTop}
-			title="Back to top"
-			aria-label="Back to top"
+			aria-label="Scroll back to top of page"
 		>
-			↑
+			<span aria-hidden="true">↑</span>
 		</button>
 	{/if}
 

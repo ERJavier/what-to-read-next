@@ -84,45 +84,63 @@
 	<title>{book?.title || 'Book Details'} - WhatToRead</title>
 </svelte:head>
 
+<!-- Skip to main content link -->
+<a
+	href="#main-content"
+	class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-academia-gold focus:text-academia-dark focus:rounded focus:font-semibold"
+>
+	Skip to main content
+</a>
+
 <div class="min-h-screen p-4 md:p-8">
 	<div class="max-w-4xl mx-auto">
 		<!-- Back Button -->
-		<button
-			onclick={handleBack}
-			class="btn btn-secondary mb-6 flex items-center gap-2"
-			aria-label="Go back"
-		>
-			<svg
-				xmlns="http://www.w3.org/2000/svg"
-				class="h-5 w-5"
-				viewBox="0 0 20 20"
-				fill="currentColor"
+		<nav aria-label="Navigation">
+			<button
+				onclick={handleBack}
+				class="btn btn-secondary mb-6 flex items-center gap-2 focus:outline-2 focus:outline-offset-2 focus:outline-academia-gold"
+				aria-label="Go back to search page"
 			>
-				<path
-					fill-rule="evenodd"
-					d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
-					clip-rule="evenodd"
-				/>
-			</svg>
-			Back to Search
-		</button>
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					class="h-5 w-5"
+					viewBox="0 0 20 20"
+					fill="currentColor"
+					aria-hidden="true"
+				>
+					<path
+						fill-rule="evenodd"
+						d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
+						clip-rule="evenodd"
+					/>
+				</svg>
+				Back to Search
+			</button>
+		</nav>
 
-		{#if error}
-			<ErrorBoundary error={error} />
-		{/if}
+		<main id="main-content" role="main">
+			{#if error}
+				<ErrorBoundary error={error} />
+			{/if}
 
-		{#if loading}
-			<Loading message="Loading book details..." />
-		{:else if error}
-			<div class="card bg-red-900/20 border-red-500">
-				<h2 class="text-xl font-bold text-red-400 mb-2">Error</h2>
-				<p class="text-red-300 mb-4">{error.message}</p>
-				<button onclick={handleBack} class="btn btn-secondary">
-					Go Back
-				</button>
-			</div>
-		{:else if book}
-			<div class="card">
+			{#if loading}
+				<div role="status" aria-live="polite" aria-atomic="true">
+					<Loading message="Loading book details..." />
+				</div>
+			{:else if error}
+				<div class="card bg-red-900/20 border-red-500" role="alert" aria-live="assertive">
+					<h2 class="text-xl font-bold text-red-400 mb-2">Error</h2>
+					<p class="text-red-300 mb-4">{error.message}</p>
+					<button 
+						onclick={handleBack} 
+						class="btn btn-secondary focus:outline-2 focus:outline-offset-2 focus:outline-academia-gold"
+						aria-label="Go back to search page"
+					>
+						Go Back
+					</button>
+				</div>
+			{:else if book}
+				<article class="card">
 				<!-- Book Title -->
 				<h1 class="text-4xl md:text-5xl font-serif font-bold text-academia-gold mb-4">
 					{book.title}
@@ -154,10 +172,11 @@
 						<h2 class="text-lg font-semibold text-academia-cream/80 mb-3">
 							Subjects & Genres
 						</h2>
-						<div class="flex flex-wrap gap-2">
+						<div class="flex flex-wrap gap-2" role="list" aria-label="Subjects and genres">
 							{#each book.subjects as subject}
 								<span
 									class="px-3 py-1.5 bg-academia-lighter rounded-md text-sm text-academia-cream border border-academia-lighter hover:border-academia-accent transition-colors"
+									role="listitem"
 								>
 									{subject}
 								</span>
@@ -212,34 +231,37 @@
 					</div>
 				{/if}
 
-			</div>
-		{/if}
+				</article>
 
-		<!-- Related/Recommended Books Section -->
-		{#if book && !loading}
-			<div class="mt-8 pt-6 border-t border-academia-lighter">
-				<h2 class="text-2xl font-semibold text-academia-cream/80 mb-6">
-					Related Books
-				</h2>
+				<!-- Related/Recommended Books Section -->
+				{#if book && !loading}
+					<section class="mt-8 pt-6 border-t border-academia-lighter" aria-labelledby="related-books-heading">
+						<h2 id="related-books-heading" class="text-2xl font-semibold text-academia-cream/80 mb-6">
+							Related Books
+						</h2>
 
-				{#if loadingRelated}
-					<Loading message="Finding similar books..." />
-				{:else if relatedBooksError}
-					<div class="card bg-yellow-900/20 border-yellow-500">
-						<p class="text-yellow-300">
-							Unable to load related books. {relatedBooksError.message}
-						</p>
-					</div>
-				{:else if relatedBooks.length > 0}
-					<ResultsGrid books={relatedBooks} onBookClick={handleRelatedBookClick} />
-				{:else}
-					<div class="text-center py-8">
-						<p class="text-academia-cream/60">
-							No related books found at this time.
-						</p>
-					</div>
+						{#if loadingRelated}
+							<div role="status" aria-live="polite" aria-atomic="true">
+								<Loading message="Finding similar books..." />
+							</div>
+						{:else if relatedBooksError}
+							<div class="card bg-yellow-900/20 border-yellow-500" role="alert" aria-live="assertive">
+								<p class="text-yellow-300">
+									Unable to load related books. {relatedBooksError.message}
+								</p>
+							</div>
+						{:else if relatedBooks.length > 0}
+							<ResultsGrid books={relatedBooks} onBookClick={handleRelatedBookClick} />
+						{:else}
+							<div class="text-center py-8" role="status" aria-live="polite">
+								<p class="text-academia-cream/60">
+									No related books found at this time.
+								</p>
+							</div>
+						{/if}
+					</section>
 				{/if}
-			</div>
-		{/if}
+			{/if}
+		</main>
 	</div>
 </div>

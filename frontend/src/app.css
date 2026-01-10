@@ -6,6 +6,59 @@
 	body {
 		@apply bg-academia-dark text-academia-cream font-sans;
 	}
+
+	/* 
+	 * Color Contrast Notes for WCAG AA Compliance:
+	 * 
+	 * Primary text combinations:
+	 * - academia-cream (#f5f5dc) on academia-dark (#1a1a1a): ~15:1 ✅ Excellent
+	 * - academia-cream on academia-light (#2d2d2d): ~13:1 ✅ Excellent  
+	 * 
+	 * Note: Lower opacity text (e.g., text-academia-cream/60, /40) may have reduced contrast.
+	 * Use with caution and ensure minimum 4.5:1 for normal text, 3:1 for large text (WCAG AA).
+	 * For critical text, avoid opacity below /70 for normal text on dark backgrounds.
+	 */
+
+	/* Skip link styles */
+	.sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+		border-width: 0;
+	}
+
+	.focus\:not-sr-only:focus {
+		position: static;
+		width: auto;
+		height: auto;
+		padding: inherit;
+		margin: inherit;
+		overflow: visible;
+		clip: auto;
+		white-space: normal;
+	}
+
+	/* Enhanced focus styles for accessibility */
+	*:focus-visible {
+		outline: 2px solid #d4af37;
+		outline-offset: 2px;
+	}
+
+	/* Ensure buttons have visible focus states */
+	button:focus-visible,
+	a:focus-visible,
+	input:focus-visible,
+	select:focus-visible,
+	textarea:focus-visible {
+		outline: 2px solid #d4af37;
+		outline-offset: 2px;
+		z-index: 1;
+	}
 }
 
 @layer components {

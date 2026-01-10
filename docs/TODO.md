@@ -72,13 +72,13 @@ This document tracks improvements and enhancements for the WhatToRead frontend a
 ## Nice to Have / Future Enhancements
 
 ### 9. Accessibility Improvements
-- [ ] Add ARIA labels to all interactive elements
-- [ ] Implement proper keyboard navigation
-- [ ] Add screen reader support
-- [ ] Improve focus management
-- [ ] Add skip links for main content
-- [ ] Ensure color contrast meets WCAG standards
-- [ ] Add alt text for all images
+- [x] Add ARIA labels to all interactive elements
+- [x] Implement proper keyboard navigation
+- [x] Add screen reader support
+- [x] Improve focus management
+- [x] Add skip links for main content
+- [x] Ensure color contrast meets WCAG standards
+- [x] Add alt text for all images
 
 ### 10. Enhanced Animations
 - [ ] Improve swipe transition smoothness

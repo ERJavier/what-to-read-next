@@ -42,9 +42,24 @@
 			handleSwipeRight(currentBook);
 		}
 	}
+
+	// Handle keyboard navigation for swipe stack
+	function handleKeydown(e: KeyboardEvent, book: Book) {
+		if (e.key === 'ArrowLeft' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+			e.preventDefault();
+			handleSwipeLeft(book);
+		} else if (e.key === 'ArrowRight' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+			e.preventDefault();
+			handleSwipeRight(book);
+		}
+	}
 </script>
 
-<div class="relative w-full max-w-md mx-auto h-[600px]">
+<div 
+	class="relative w-full max-w-md mx-auto h-[600px]"
+	role="region"
+	aria-label="Swipeable book cards. Use arrow keys or swipe gestures to navigate."
+>
 	{#each visibleBooks as book, i (book.id)}
 		{@const zIndex = visibleBooks.length - i}
 		{@const scale = 1 - (i * 0.05)}
@@ -53,6 +68,8 @@
 		<div
 			class="absolute inset-0 transition-all duration-300 ease-out"
 			style="z-index: {zIndex}; transform: scale({scale}); opacity: {opacity};"
+			role={i === 0 ? 'application' : 'presentation'}
+			aria-label={i === 0 ? `Book ${currentIndex + 1} of ${books.length}. ${book.title} by ${book.authors?.join(', ') || 'Unknown author'}. Swipe left for not interested, right for interested, or click for details.` : undefined}
 		>
 			<BookCard
 				{book}
@@ -64,7 +81,7 @@
 	{/each}
 	
 	{#if books.length === 0}
-		<div class="text-center py-12">
+		<div class="text-center py-12" role="status" aria-live="polite">
 			<p class="text-academia-cream/60 text-lg">No books to swipe. Start searching!</p>
 		</div>
 	{/if}
