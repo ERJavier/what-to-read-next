@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Book } from '../types';
+	import LazyImage from './LazyImage.svelte';
 
 	interface Props {
 		book: Book;
@@ -9,6 +10,15 @@
 	}
 
 	let { book, onSwipeLeft, onSwipeRight, onClick }: Props = $props();
+	
+	// If book covers are added in the future, this will be used
+	// For now, we'll keep the existing layout without images
+	const bookCoverUrl = $derived(() => {
+		// Future: Generate cover URL from Open Library
+		// Example: `https://covers.openlibrary.org/b/olid/${book.ol_key}-M.jpg`
+		// For now, return null
+		return null;
+	});
 	
 	let x = $state(0);
 	let y = $state(0);
