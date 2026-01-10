@@ -42,8 +42,32 @@
 	let hasError = $state(false);
 	let supportsWebP = $state<boolean | null>(null);
 
-	// Normalize src to ImageSource array format
-	const normalizedSources = $derived(() => {
+	// Generate srcset for responsive images
+	function generateSrcset(baseUrl: string, sizesAttr: string): string {
+		// Extract width descriptors from sizes attribute
+		// Simple implementation: create common responsive breakpoints
+		const widths = [320, 640, 768, 1024, 1280, 1920];
+		
+		// If baseUrl contains Open Library covers, use their size parameters
+		if (baseUrl.includes('covers.openlibrary.org')) {
+			// Open Library uses size suffixes: S, M, L
+			return [
+				baseUrl.replace(/-[SML]\.jpg$/, '-S.jpg') + ' 160w',
+				baseUrl.replace(/-[SML]\.jpg$/, '-M.jpg') + ' 480w',
+				baseUrl.replace(/-[SML]\.jpg$/, '-L.jpg') + ' 768w'
+			].join(', ');
+		}
+		
+		// For other URLs, append width parameters (common pattern)
+		// This is a simplified version - actual implementation may vary by CDN
+		return widths
+			.filter(w => w <= 1920) // Reasonable max
+			.map(w => `${baseUrl}?w=${w} ${w}w`)
+			.join(', ');
+	}
+
+	// Normalize src to ImageSource array format - computed reactively
+	const normalizedSources = $derived.by(() => {
 		if (Array.isArray(src)) {
 			return src;
 		}
@@ -74,30 +98,6 @@
 		}];
 	});
 
-	// Generate srcset for responsive images
-	function generateSrcset(baseUrl: string, sizesAttr: string): string {
-		// Extract width descriptors from sizes attribute
-		// Simple implementation: create common responsive breakpoints
-		const widths = [320, 640, 768, 1024, 1280, 1920];
-		
-		// If baseUrl contains Open Library covers, use their size parameters
-		if (baseUrl.includes('covers.openlibrary.org')) {
-			// Open Library uses size suffixes: S, M, L
-			return [
-				baseUrl.replace(/-[SML]\.jpg$/, '-S.jpg') + ' 160w',
-				baseUrl.replace(/-[SML]\.jpg$/, '-M.jpg') + ' 480w',
-				baseUrl.replace(/-[SML]\.jpg$/, '-L.jpg') + ' 768w'
-			].join(', ');
-		}
-		
-		// For other URLs, append width parameters (common pattern)
-		// This is a simplified version - actual implementation may vary by CDN
-		return widths
-			.filter(w => w <= 1920) // Reasonable max
-			.map(w => `${baseUrl}?w=${w} ${w}w`)
-			.join(', ');
-	}
-
 	// Check WebP support
 	onMount(() => {
 		if (typeof window === 'undefined') return;
@@ -113,24 +113,25 @@
 		supportsWebP = webpSupported();
 	});
 
-	// Initialize with placeholder if provided
+	// Update imageSources when normalizedSources changes, but only sync state when needed
 	$effect(() => {
-		const placeholderValue = placeholder; // Capture current value
-		if (placeholderValue && !isLoaded && !imageSrc) {
-			imageSrc = placeholderValue;
+		const sources = normalizedSources;
+		// Only update imageSources if it's actually different (avoid unnecessary updates)
+		if (JSON.stringify(sources) !== JSON.stringify(imageSources)) {
+			imageSources = sources;
+		}
+		
+		// Set initial src for immediate rendering if not already set
+		if (sources.length > 0 && !isLoaded && !imageSrc && !placeholder) {
+			const fallbackSrc = sources[sources.length - 1].src;
+			imageSrc = fallbackSrc;
 		}
 	});
-	
-	// Update image sources when src changes
+
+	// Initialize with placeholder if provided - only once
 	$effect(() => {
-		imageSources = normalizedSources();
-		// Set initial src for immediate rendering
-		if (imageSources.length > 0) {
-			// Use fallback (last) source as initial src
-			const fallbackSrc = imageSources[imageSources.length - 1].src;
-			if (!isLoaded && !imageSrc && !placeholder) {
-				imageSrc = fallbackSrc;
-			}
+		if (placeholder && !isLoaded && !imageSrc) {
+			imageSrc = placeholder;
 		}
 	});
 

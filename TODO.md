@@ -365,7 +365,7 @@ This document tracks the development progress of WhatToRead. Tasks are organized
 - [x] Add LICENSE file (Apache 2.0)
 
 ### Project Management
-- [ ] Set up issue templates
+- [x] Set up issue templates
 - [ ] Create project board
 - [ ] Set up CI/CD pipeline
 - [ ] Add automated testing

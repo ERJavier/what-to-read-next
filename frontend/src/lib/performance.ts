@@ -43,30 +43,61 @@ class PerformanceMonitor {
 	 */
 	private initObservers(): void {
 		try {
+			// Check which entry types are supported (if the static property exists)
+			// supportedEntryTypes is a static property that may not exist in all browsers
+			let supportedTypes: string[] = [];
+			if ('PerformanceObserver' in window) {
+				const PO = PerformanceObserver as any;
+				if (PO.supportedEntryTypes && Array.isArray(PO.supportedEntryTypes)) {
+					supportedTypes = PO.supportedEntryTypes;
+				}
+			}
+
+			// Helper to check if an entry type is supported
+			const isSupported = (entryType: string) => {
+				// If we don't have supportedTypes info, try anyway (for older browsers)
+				if (supportedTypes.length === 0) return true;
+				return supportedTypes.includes(entryType);
+			};
+
 			// Observe navigation timing
-			const navObserver = new PerformanceObserver((list) => {
-				const entries = list.getEntries();
-				entries.forEach((entry) => {
-					if (entry.entryType === 'navigation') {
-						this.collectNavigationMetrics(entry as PerformanceNavigationTiming);
-					}
-				});
-			});
-			navObserver.observe({ entryTypes: ['navigation'] });
+			if (isSupported('navigation')) {
+				try {
+					const navObserver = new PerformanceObserver((list) => {
+						const entries = list.getEntries();
+						entries.forEach((entry) => {
+							if (entry.entryType === 'navigation') {
+								this.collectNavigationMetrics(entry as PerformanceNavigationTiming);
+							}
+						});
+					});
+					navObserver.observe({ entryTypes: ['navigation'] });
+					this.observers.push(navObserver);
+				} catch (e) {
+					// Navigation observer not supported, ignore silently
+				}
+			}
 
 			// Observe resource timing
-			const resourceObserver = new PerformanceObserver((list) => {
-				const entries = list.getEntries();
-				entries.forEach((entry) => {
-					if (entry.entryType === 'resource') {
-						this.collectResourceMetrics(entry as PerformanceResourceTiming);
-					}
-				});
-			});
-			resourceObserver.observe({ entryTypes: ['resource'] });
+			if (isSupported('resource')) {
+				try {
+					const resourceObserver = new PerformanceObserver((list) => {
+						const entries = list.getEntries();
+						entries.forEach((entry) => {
+							if (entry.entryType === 'resource') {
+								this.collectResourceMetrics(entry as PerformanceResourceTiming);
+							}
+						});
+					});
+					resourceObserver.observe({ entryTypes: ['resource'] });
+					this.observers.push(resourceObserver);
+				} catch (e) {
+					// Resource observer not supported, ignore silently
+				}
+			}
 
 			// Observe paint timing (if supported)
-			if ('PerformanceObserver' in window) {
+			if (isSupported('paint')) {
 				try {
 					const paintObserver = new PerformanceObserver((list) => {
 						const entries = list.getEntries();
@@ -79,12 +110,12 @@ class PerformanceMonitor {
 					paintObserver.observe({ entryTypes: ['paint'] });
 					this.observers.push(paintObserver);
 				} catch (e) {
-					// Paint observer not supported in all browsers
+					// Paint observer not supported in all browsers, ignore silently
 				}
 			}
 
 			// Observe long tasks (if supported)
-			if ('PerformanceObserver' in window) {
+			if (isSupported('longtask')) {
 				try {
 					const longTaskObserver = new PerformanceObserver((list) => {
 						const entries = list.getEntries();
@@ -103,11 +134,11 @@ class PerformanceMonitor {
 					longTaskObserver.observe({ entryTypes: ['longtask'] });
 					this.observers.push(longTaskObserver);
 				} catch (e) {
-					// Long task observer not supported in all browsers
+					// Long task observer not supported, ignore silently
 				}
 			}
 
-			this.observers.push(navObserver, resourceObserver);
+			// Observers are already pushed individually above
 		} catch (error) {
 			console.warn('PerformanceObserver not fully supported', error);
 		}

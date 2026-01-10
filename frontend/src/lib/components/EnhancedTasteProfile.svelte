@@ -30,6 +30,7 @@
 	let loadingRecommendations = $state(false);
 	let recommendedBooks = $state<any[]>([]);
 	let isUpdatingStats = $state(false);
+	let recommendationError = $state<string | null>(null);
 
 	function formatDate(dateString: string): string {
 		const date = new Date(dateString);
@@ -89,6 +90,7 @@
 		if (recommendationQueries.length === 0) return;
 		
 		loadingRecommendations = true;
+		recommendationError = null;
 		try {
 			// Use the first recommendation query
 			const query = recommendationQueries[0];
@@ -97,6 +99,15 @@
 		} catch (e) {
 			console.error('Failed to load recommendations:', e);
 			recommendedBooks = [];
+			
+			// Provide user-friendly error message
+			if (e instanceof TypeError && e.message.includes('fetch')) {
+				recommendationError = 'Unable to connect to the recommendation service. Please ensure the API is running.';
+			} else if (e instanceof Error) {
+				recommendationError = e.message || 'Failed to load recommendations. Please try again later.';
+			} else {
+				recommendationError = 'Failed to load recommendations. Please try again later.';
+			}
 		} finally {
 			loadingRecommendations = false;
 		}
@@ -636,6 +647,18 @@
 						</p>
 						{#if loadingRecommendations}
 							<div class="text-center py-8 text-academia-cream/60 text-sm">Loading recommendations...</div>
+						{:else if recommendationError}
+							<div class="text-center py-8">
+								<div class="bg-red-900/20 border border-red-700/50 rounded p-4 mb-4">
+									<p class="text-sm text-red-300 mb-2">{recommendationError}</p>
+									<button
+										class="text-xs text-academia-gold hover:text-academia-accent transition-colors underline"
+										onclick={loadRecommendations}
+									>
+										Try again
+									</button>
+								</div>
+							</div>
 						{:else if recommendedBooks.length > 0}
 							<div class="grid grid-cols-1 gap-3">
 								{#each recommendedBooks as book}

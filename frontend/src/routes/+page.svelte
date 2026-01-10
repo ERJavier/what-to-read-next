@@ -184,8 +184,8 @@
 		
 		try {
 			// Measure search performance
-			const results = await performanceMonitor.measure('search', () => {
-				return getRecommendations({ query, limit: searchLimit });
+			const results = await performanceMonitor.measure('search', async () => {
+				return await getRecommendations({ query, limit: searchLimit });
 			});
 			
 			allBooks = results; // Store all books, filtering will be applied reactively
@@ -209,12 +209,17 @@
 			showBackToTop = false;
 			window.scrollTo({ top: 0, behavior: 'smooth' });
 		} catch (e) {
-			const errorMessage = e instanceof Error ? e.message : 'Failed to search';
-			error = new Error(errorMessage);
-			error = e instanceof Error ? e : new Error('Failed to search');
+			console.error('Search error:', e);
+			// Create error with user-friendly message
+			if (e instanceof Error) {
+				error = e;
+			} else {
+				error = new Error('Failed to search. Please try again.');
+			}
 			allBooks = [];
 			hasMoreResults = false;
 		} finally {
+			// Always reset loading state, even if there's an error
 			loading = false;
 		}
 	}
