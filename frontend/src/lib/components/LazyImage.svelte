@@ -1,14 +1,24 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 
-	interface Props {
+	interface ImageSource {
 		src: string;
+		srcset?: string;
+		media?: string;
+		type?: string; // MIME type for <source> element
+	}
+
+	interface Props {
+		src: string | ImageSource[];
 		alt: string;
 		placeholder?: string; // Placeholder image or data URL
 		class?: string;
 		width?: number | string;
 		height?: number | string;
 		loading?: 'lazy' | 'eager'; // Browser native lazy loading (fallback)
+		sizes?: string; // For responsive images
+		// WebP support: if true, automatically generate WebP version with fallback
+		webp?: boolean;
 	}
 
 	let { 
@@ -18,7 +28,9 @@
 		class: className = '',
 		width,
 		height,
-		loading = 'lazy'
+		loading = 'lazy',
+		sizes,
+		webp = false
 	}: Props = $props();
 
 	let containerElement: HTMLDivElement | null = $state(null);
@@ -26,13 +38,99 @@
 	let isLoaded = $state(false);
 	let isInView = $state(false);
 	let imageSrc = $state('');
+	let imageSources = $state<ImageSource[]>([]);
 	let hasError = $state(false);
+	let supportsWebP = $state<boolean | null>(null);
+
+	// Normalize src to ImageSource array format
+	const normalizedSources = $derived(() => {
+		if (Array.isArray(src)) {
+			return src;
+		}
+		
+		// Single string src - convert to array format
+		const baseSrc = src as string;
+		
+		if (webp) {
+			// Generate WebP version with fallback
+			// Try to create WebP URL (assuming source supports it, or using image CDN)
+			const webpSrc = baseSrc.replace(/\.(jpg|jpeg|png)$/i, '.webp');
+			return [
+				{
+					src: webpSrc,
+					type: 'image/webp',
+					srcset: sizes ? generateSrcset(webpSrc, sizes) : undefined
+				},
+				{
+					src: baseSrc,
+					srcset: sizes ? generateSrcset(baseSrc, sizes) : undefined
+				}
+			];
+		}
+		
+		return [{
+			src: baseSrc,
+			srcset: sizes ? generateSrcset(baseSrc, sizes) : undefined
+		}];
+	});
+
+	// Generate srcset for responsive images
+	function generateSrcset(baseUrl: string, sizesAttr: string): string {
+		// Extract width descriptors from sizes attribute
+		// Simple implementation: create common responsive breakpoints
+		const widths = [320, 640, 768, 1024, 1280, 1920];
+		
+		// If baseUrl contains Open Library covers, use their size parameters
+		if (baseUrl.includes('covers.openlibrary.org')) {
+			// Open Library uses size suffixes: S, M, L
+			return [
+				baseUrl.replace(/-[SML]\.jpg$/, '-S.jpg') + ' 160w',
+				baseUrl.replace(/-[SML]\.jpg$/, '-M.jpg') + ' 480w',
+				baseUrl.replace(/-[SML]\.jpg$/, '-L.jpg') + ' 768w'
+			].join(', ');
+		}
+		
+		// For other URLs, append width parameters (common pattern)
+		// This is a simplified version - actual implementation may vary by CDN
+		return widths
+			.filter(w => w <= 1920) // Reasonable max
+			.map(w => `${baseUrl}?w=${w} ${w}w`)
+			.join(', ');
+	}
+
+	// Check WebP support
+	onMount(() => {
+		if (typeof window === 'undefined') return;
+		
+		// Check WebP support
+		const webpSupported = () => {
+			const canvas = document.createElement('canvas');
+			canvas.width = 1;
+			canvas.height = 1;
+			return canvas.toDataURL('image/webp').indexOf('data:image/webp') === 0;
+		};
+		
+		supportsWebP = webpSupported();
+	});
 
 	// Initialize with placeholder if provided
 	$effect(() => {
 		const placeholderValue = placeholder; // Capture current value
 		if (placeholderValue && !isLoaded && !imageSrc) {
 			imageSrc = placeholderValue;
+		}
+	});
+	
+	// Update image sources when src changes
+	$effect(() => {
+		imageSources = normalizedSources();
+		// Set initial src for immediate rendering
+		if (imageSources.length > 0) {
+			// Use fallback (last) source as initial src
+			const fallbackSrc = imageSources[imageSources.length - 1].src;
+			if (!isLoaded && !imageSrc && !placeholder) {
+				imageSrc = fallbackSrc;
+			}
 		}
 	});
 
@@ -42,26 +140,47 @@
 		// Use Intersection Observer for lazy loading (more control than native)
 		const observer = new IntersectionObserver(
 			(entries) => {
-				entries.forEach((entry) => {
-					if (entry.isIntersecting) {
-						isInView = true;
-						// Start loading the image
-						if (!isLoaded && src && !hasError) {
-							const img = new Image();
-							img.onload = () => {
-								imageSrc = src;
-								isLoaded = true;
-								hasError = false;
-							};
-							img.onerror = () => {
-								hasError = true;
-								isLoaded = false;
-							};
-							img.src = src;
+					entries.forEach((entry) => {
+						if (entry.isIntersecting) {
+							isInView = true;
+							// Start loading the image
+							if (!isLoaded && imageSources.length > 0 && !hasError) {
+								// Use the first source (WebP if available and supported, or fallback)
+								const sourceToLoad = supportsWebP && imageSources.length > 1 
+									? imageSources[0] 
+									: imageSources[imageSources.length - 1];
+								
+								const img = new Image();
+								img.onload = () => {
+									imageSrc = sourceToLoad.src;
+									isLoaded = true;
+									hasError = false;
+								};
+								img.onerror = () => {
+									// If WebP fails, try fallback
+									if (supportsWebP && imageSources.length > 1 && sourceToLoad === imageSources[0]) {
+										const fallback = imageSources[imageSources.length - 1];
+										const fallbackImg = new Image();
+										fallbackImg.onload = () => {
+											imageSrc = fallback.src;
+											isLoaded = true;
+											hasError = false;
+										};
+										fallbackImg.onerror = () => {
+											hasError = true;
+											isLoaded = false;
+										};
+										fallbackImg.src = fallback.src;
+									} else {
+										hasError = true;
+										isLoaded = false;
+									}
+								};
+								img.src = sourceToLoad.src;
+							}
+							observer.unobserve(containerElement!);
 						}
-						observer.unobserve(containerElement!);
-					}
-				});
+					});
 			},
 			{
 				root: null,
@@ -118,13 +237,47 @@
 			{/if}
 		</div>
 	{:else}
-		<!-- Loaded image -->
-		<img 
-			bind:this={imgElement}
-			src={imageSrc || src}
-			alt={alt}
-			class="w-full h-full object-cover"
-			loading={isInView ? 'eager' : loading}
-		/>
+		<!-- Loaded image with responsive support -->
+		{#if imageSources.length > 0}
+			{@const fallbackSource = imageSources[imageSources.length - 1]}
+			{#if imageSources.length > 1 && supportsWebP}
+				<picture>
+					<!-- WebP source -->
+					{#each imageSources.slice(0, -1) as source}
+						<source
+							{...(source.srcset ? { srcset: source.srcset } : {})}
+							{...(source.type ? { type: source.type } : {})}
+							{...(source.media ? { media: source.media } : {})}
+						/>
+					{/each}
+					<img 
+						bind:this={imgElement}
+						src={imageSrc || fallbackSource.src}
+						{...(fallbackSource.srcset ? { srcset: fallbackSource.srcset } : {})}
+						{...(sizes ? { sizes } : {})}
+						alt={alt}
+						{...(typeof width === 'number' ? { width } : {})}
+						{...(typeof height === 'number' ? { height } : {})}
+						class="w-full h-full object-cover"
+						loading={isInView ? 'eager' : loading}
+						decoding="async"
+					/>
+				</picture>
+			{:else}
+				<!-- Simple img without picture element -->
+				<img 
+					bind:this={imgElement}
+					src={imageSrc || fallbackSource.src}
+					{...(fallbackSource.srcset ? { srcset: fallbackSource.srcset } : {})}
+					{...(sizes ? { sizes } : {})}
+					alt={alt}
+					{...(typeof width === 'number' ? { width } : {})}
+					{...(typeof height === 'number' ? { height } : {})}
+					class="w-full h-full object-cover"
+					loading={isInView ? 'eager' : loading}
+					decoding="async"
+				/>
+			{/if}
+		{/if}
 	{/if}
 </div>
