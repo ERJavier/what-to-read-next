@@ -3,6 +3,7 @@
 	import { page } from '$app/stores';
 	import type { Book, BookDetail } from '$lib/types';
 	import { getBookDetail, getRecommendations } from '$lib/api';
+	import { addToRecentlyViewed } from '$lib/recentlyViewed';
 	import Loading from '$lib/components/Loading.svelte';
 	import ErrorBoundary from '$lib/components/ErrorBoundary.svelte';
 	import ResultsGrid from '$lib/components/ResultsGrid.svelte';
@@ -40,6 +41,8 @@
 		try {
 			const bookData = await getBookDetail(bookId);
 			book = bookData;
+			// Add to recently viewed
+			addToRecentlyViewed(bookData);
 		} catch (e) {
 			error = e instanceof Error ? e : new Error('Failed to load book details');
 			book = null;
@@ -128,16 +131,28 @@
 					<Loading message="Loading book details..." />
 				</div>
 			{:else if error}
-				<div class="card bg-red-900/20 border-red-500" role="alert" aria-live="assertive">
-					<h2 class="text-xl font-bold text-red-400 mb-2">Error</h2>
-					<p class="text-red-300 mb-4">{error.message}</p>
-					<button 
-						onclick={handleBack} 
-						class="btn btn-secondary focus:outline-2 focus:outline-offset-2 focus:outline-academia-gold"
-						aria-label="Go back to search page"
-					>
-						Go Back
-					</button>
+				<div role="alert" aria-live="assertive">
+					<ErrorBoundary error={error} showSuggestions={true} />
+					<div class="mt-4 flex gap-3">
+						<button 
+							onclick={handleBack} 
+							class="btn btn-secondary focus:outline-2 focus:outline-offset-2 focus:outline-academia-gold"
+							aria-label="Go back to search page"
+						>
+							Go Back to Search
+						</button>
+						<button
+							onclick={() => {
+								if (book?.id) {
+									loadBookDetail(book.id);
+								}
+							}}
+							class="btn btn-primary focus:outline-2 focus:outline-offset-2 focus:outline-academia-gold"
+							aria-label="Retry loading book details"
+						>
+							Retry
+						</button>
+					</div>
 				</div>
 			{:else if book}
 				<article class="card">

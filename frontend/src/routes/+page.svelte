@@ -8,11 +8,14 @@
 	import { getSearchHistory, addSearchToHistory } from '$lib/searchHistory';
 	import { getFilterPreferences, saveFilterPreferences } from '$lib/filterPreferences';
 	import { applyFiltersAndSort } from '$lib/filterUtils';
+	import { getRecentlyViewedBooks, removeFromRecentlyViewed, clearRecentlyViewed } from '$lib/recentlyViewed';
 	import SearchBar from '$lib/components/SearchBar.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 	import ErrorBoundary from '$lib/components/ErrorBoundary.svelte';
 	import TasteProfile from '$lib/components/TasteProfile.svelte';
 	import FilterBar from '$lib/components/FilterBar.svelte';
+	import BookCard from '$lib/components/BookCard.svelte';
+	import Tooltip from '$lib/components/Tooltip.svelte';
 	
 	// Lazy load heavy components based on view mode
 	let SwipeStackComponent: Component<any> | null = $state(null);
@@ -26,7 +29,13 @@
 	let error = $state<Error | null>(null);
 	let viewMode = $state<'swipe' | 'grid'>('swipe');
 	let searchHistory = $state<SearchHistoryEntry[]>([]);
-	let paginationMode = $state<'load-more' | 'infinite-scroll'>('load-more');
+	const INITIAL_LIMIT = 20;
+	const LOAD_MORE_INCREMENT = 20;
+	const MAX_LIMIT = 100; // Match API's maximum limit (defined in RecommendationRequest model)
+
+	let recentlyViewed = $state(getRecentlyViewedBooks());
+	let paginationMode = $state<'load-more' | 'infinite-scroll' | 'pages'>('load-more');
+	let showRecentlyViewed = $state(false);
 	let currentLimit = $state(20);
 	let hasMoreResults = $state(false);
 	let showBackToTop = $state(false);
@@ -35,19 +44,36 @@
 	let searchBarRef: any = $state(null);
 	let swipeStackRef: any = $state(null);
 	let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
-	const INITIAL_LIMIT = 20;
-	const LOAD_MORE_INCREMENT = 20;
-	const MAX_LIMIT = 100; // Match API's maximum limit (defined in RecommendationRequest model)
 
 	// Apply filters and sorting to books
 	let books = $derived(applyFiltersAndSort(allBooks, filterPreferences));
+	let currentPage = $derived(Math.ceil(currentLimit / INITIAL_LIMIT));
+	let totalPages = $derived(Math.ceil(MAX_LIMIT / INITIAL_LIMIT));
+	let pageNumbers = $derived(Array.from({ length: Math.min(totalPages, 10) }, (_, i) => i + 1));
 
 	function loadSearchHistory() {
 		searchHistory = getSearchHistory();
 	}
 
+	function loadRecentlyViewed() {
+		recentlyViewed = getRecentlyViewedBooks();
+	}
+
+	function handleRemoveFromRecentlyViewed(bookId: number) {
+		removeFromRecentlyViewed(bookId);
+		loadRecentlyViewed();
+	}
+
+	function handleClearRecentlyViewed() {
+		if (confirm('Are you sure you want to clear your recently viewed books?')) {
+			clearRecentlyViewed();
+			loadRecentlyViewed();
+		}
+	}
+
 	onMount(() => {
 		loadSearchHistory();
+		loadRecentlyViewed();
 		// Load filter preferences
 		filterPreferences = getFilterPreferences();
 		
@@ -65,6 +91,7 @@
 		// Listen for storage changes to update the list when history changes elsewhere
 		const handleStorageChange = () => {
 			loadSearchHistory();
+			loadRecentlyViewed();
 		};
 		window.addEventListener('storage', handleStorageChange);
 
@@ -115,21 +142,22 @@
 		}
 	});
 
-	async function handleSearch(query: string) {
+	async function handleSearch(query: string, limit?: number) {
 		if (!query.trim()) return;
 		
 		loading = true;
 		error = null;
 		searchQuery = query;
-		currentLimit = INITIAL_LIMIT;
+		const searchLimit = limit || INITIAL_LIMIT;
+		currentLimit = searchLimit;
 		hasMoreResults = false; // Reset until we know otherwise
 		
 		try {
-			const results = await getRecommendations({ query, limit: INITIAL_LIMIT });
+			const results = await getRecommendations({ query, limit: searchLimit });
 			allBooks = results; // Store all books, filtering will be applied reactively
 			
 			// Check if there might be more results (if we got exactly the requested amount)
-			hasMoreResults = results.length === INITIAL_LIMIT;
+			hasMoreResults = results.length === searchLimit && searchLimit < MAX_LIMIT;
 			
 			// Add to search history
 			addSearchToHistory(query);
@@ -137,6 +165,7 @@
 			
 			// Reset scroll position
 			showBackToTop = false;
+			window.scrollTo({ top: 0, behavior: 'smooth' });
 		} catch (e) {
 			const errorMessage = e instanceof Error ? e.message : 'Failed to search';
 			error = new Error(errorMessage);
@@ -145,6 +174,22 @@
 			hasMoreResults = false;
 		} finally {
 			loading = false;
+		}
+	}
+
+	async function goToPage(page: number) {
+		if (!searchQuery || loading || loadingMore || page < 1 || page > totalPages) return;
+		const targetLimit = Math.min(page * INITIAL_LIMIT, MAX_LIMIT);
+		
+		if (targetLimit <= currentLimit) {
+			// For pages we've already loaded, just slice the array and scroll to top
+			currentLimit = targetLimit;
+			allBooks = allBooks.slice(0, targetLimit);
+			hasMoreResults = targetLimit < MAX_LIMIT && allBooks.length === targetLimit;
+			window.scrollTo({ top: 0, behavior: 'smooth' });
+		} else {
+			// For pages we haven't loaded yet, we need to fetch more
+			await handleSearch(searchQuery, targetLimit);
 		}
 	}
 
@@ -164,8 +209,15 @@
 		
 		try {
 			// Calculate new limit, ensuring we don't exceed API's max of 100
-			const newLimit = Math.min(currentLimit + LOAD_MORE_INCREMENT, MAX_LIMIT);
-			const newResults = await getRecommendations({ query: searchQuery, limit: newLimit });
+			// Calculate new limit based on pagination mode
+		let newLimit: number;
+		if (paginationMode === 'pages') {
+			// For pages mode, increment by one page worth
+			newLimit = Math.min(currentLimit + INITIAL_LIMIT, MAX_LIMIT);
+		} else {
+			newLimit = Math.min(currentLimit + LOAD_MORE_INCREMENT, MAX_LIMIT);
+		}
+		const newResults = await getRecommendations({ query: searchQuery, limit: newLimit });
 			
 			// Deduplicate by book ID (in case API returns duplicates)
 			const existingIds = new Set(allBooks.map((b) => b.id));
@@ -281,18 +333,22 @@
 		<p class="text-academia-cream/80 text-lg mb-6">
 			Discover your next favorite book through semantic search
 		</p>
-		<SearchBar bind:this={searchBarRef} onSearch={handleSearch} />
+		<Tooltip text="Press / to focus the search bar">
+			<SearchBar bind:this={searchBarRef} onSearch={handleSearch} />
+		</Tooltip>
 	</header>
 
 	<nav aria-label="View and navigation options" class="flex gap-4 mb-6 justify-center flex-wrap">
-		<button
-			class="btn {viewMode === 'swipe' ? 'btn-primary' : 'btn-secondary'}"
-			onclick={() => viewMode = 'swipe'}
-			aria-label="Switch to swipe view mode"
-			aria-pressed={viewMode === 'swipe'}
-		>
-			Swipe
-		</button>
+		<Tooltip text="Press ← → arrow keys to swipe (in swipe mode)">
+			<button
+				class="btn {viewMode === 'swipe' ? 'btn-primary' : 'btn-secondary'}"
+				onclick={() => viewMode = 'swipe'}
+				aria-label="Switch to swipe view mode"
+				aria-pressed={viewMode === 'swipe'}
+			>
+				Swipe
+			</button>
+		</Tooltip>
 		<button
 			class="btn {viewMode === 'grid' ? 'btn-primary' : 'btn-secondary'}"
 			onclick={() => viewMode = 'grid'}
@@ -308,13 +364,25 @@
 		>
 			Saved Books
 		</button>
-		<button 
-			class="btn btn-secondary" 
-			onclick={() => goto('/taste-profile')}
-			aria-label="View your taste profile"
-		>
-			Taste Profile
-		</button>
+		<Tooltip text="Press ? to view all keyboard shortcuts">
+			<button 
+				class="btn btn-secondary" 
+				onclick={() => goto('/taste-profile')}
+				aria-label="View your taste profile"
+			>
+				Taste Profile
+			</button>
+		</Tooltip>
+		{#if recentlyViewed.length > 0}
+			<button 
+				class="btn btn-secondary" 
+				onclick={() => showRecentlyViewed = !showRecentlyViewed}
+				aria-label="Toggle recently viewed books"
+				aria-expanded={showRecentlyViewed}
+			>
+				Recently Viewed ({recentlyViewed.length})
+			</button>
+		{/if}
 		{#if allBooks.length > 0}
 			<button
 				class="btn {paginationMode === 'load-more' ? 'btn-primary' : 'btn-secondary'}"
@@ -332,27 +400,104 @@
 			>
 				Mode: Auto Scroll
 			</button>
+			<button
+				class="btn {paginationMode === 'pages' ? 'btn-primary' : 'btn-secondary'}"
+				onclick={() => paginationMode = 'pages'}
+				aria-label="Switch to page number pagination mode"
+				aria-pressed={paginationMode === 'pages'}
+			>
+				Mode: Pages
+			</button>
 		{/if}
 	</nav>
 
-	<main id="main-content" role="main">
+	<main id="main-content">
 
 	{#if loading}
 		<div role="status" aria-live="polite" aria-atomic="true">
 			<Loading message="Finding your perfect books..." />
 		</div>
 	{:else if error}
-		<div class="card bg-red-900/20 border-red-500 max-w-2xl mx-auto mb-6" role="alert" aria-live="assertive">
-			<h2 class="text-xl font-bold text-red-400 mb-2">Error</h2>
-			<p class="text-red-300">{error.message}</p>
+		<div class="max-w-2xl mx-auto mb-6">
+			<ErrorBoundary error={error} showSuggestions={true} />
+			<div class="mt-4 flex gap-3 justify-center">
+				<button
+					class="btn btn-secondary"
+					onclick={() => {
+						error = null;
+						searchQuery = '';
+						allBooks = [];
+					}}
+					aria-label="Clear error and start over"
+				>
+					Start Over
+				</button>
+				{#if searchQuery}
+					<button
+						class="btn btn-primary"
+						onclick={() => handleSearch(searchQuery)}
+						aria-label="Retry search"
+					>
+						Retry Search
+					</button>
+				{/if}
+			</div>
 		</div>
-	{:else if allBooks.length > 0}
+		{:else if allBooks.length > 0}
 		<div class="max-w-7xl mx-auto">
+			{#if showRecentlyViewed && recentlyViewed.length > 0}
+				<section class="mb-8 card" aria-labelledby="recently-viewed-heading">
+					<div class="flex justify-between items-center mb-4">
+						<h2 id="recently-viewed-heading" class="text-2xl font-serif font-bold text-academia-gold">
+							Recently Viewed Books
+						</h2>
+						<div class="flex gap-2">
+							<button
+								class="btn btn-secondary text-sm"
+								onclick={handleClearRecentlyViewed}
+								aria-label="Clear recently viewed books"
+							>
+								Clear All
+							</button>
+							<button
+								class="btn btn-secondary text-sm"
+								onclick={() => showRecentlyViewed = false}
+								aria-label="Hide recently viewed books"
+							>
+								Hide
+							</button>
+						</div>
+					</div>
+					{#if ResultsGridComponent}
+						{@const ResultsGrid = ResultsGridComponent}
+						<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+							{#each recentlyViewed as rv (rv.book.id)}
+								<div class="card relative group">
+									<button
+										class="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity btn btn-secondary p-1 rounded-full w-8 h-8 flex items-center justify-center focus:outline-2 focus:outline-offset-2 focus:outline-academia-gold focus:opacity-100"
+										onclick={() => handleRemoveFromRecentlyViewed(rv.book.id)}
+										aria-label="Remove {rv.book.title} from recently viewed"
+									>
+										<span aria-hidden="true" class="text-sm">✕</span>
+									</button>
+									<BookCard
+										book={rv.book}
+										onClick={() => handleBookClick(rv.book)}
+									/>
+								</div>
+							{/each}
+						</div>
+					{:else}
+						<Loading message="Loading recently viewed books..." />
+					{/if}
+				</section>
+			{/if}
 			<div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
 				<div class="lg:col-span-1">
 					<TasteProfile 
 						history={searchHistory} 
 						onHistoryChange={loadSearchHistory}
+						onQueryClick={handleSearch}
 					/>
 				</div>
 				<div class="lg:col-span-3">
@@ -426,6 +571,69 @@
 											{/if}
 										</p>
 									{/if}
+								{:else if paginationMode === 'pages'}
+									<div class="flex flex-col items-center gap-4">
+										<div class="flex items-center gap-2 flex-wrap justify-center">
+											<button
+												class="btn btn-secondary"
+												onclick={() => goToPage(currentPage - 1)}
+												disabled={currentPage === 1 || loading || loadingMore}
+												aria-label="Go to previous page"
+											>
+												← Prev
+											</button>
+											
+											<div class="flex items-center gap-1">
+												{#each pageNumbers as pageNum}
+													{#if pageNum === currentPage}
+														<span
+															class="px-3 py-2 bg-academia-gold text-academia-dark rounded font-semibold"
+															aria-current="page"
+															aria-label="Current page: {pageNum}"
+														>
+															{pageNum}
+														</span>
+													{:else}
+														<button
+															class="btn btn-secondary px-3 py-2"
+															onclick={() => goToPage(pageNum)}
+															disabled={loading || loadingMore}
+															aria-label="Go to page {pageNum}"
+														>
+															{pageNum}
+														</button>
+													{/if}
+												{/each}
+												{#if totalPages > 10}
+													<span class="text-academia-cream/60 px-2">...</span>
+													<button
+														class="btn btn-secondary px-3 py-2"
+														onclick={() => goToPage(totalPages)}
+														disabled={loading || loadingMore}
+														aria-label="Go to last page ({totalPages})"
+													>
+														{totalPages}
+													</button>
+												{/if}
+											</div>
+
+											<button
+												class="btn btn-secondary"
+												onclick={() => goToPage(currentPage + 1)}
+												disabled={!hasMoreResults || loading || loadingMore}
+												aria-label="Go to next page"
+											>
+												Next →
+											</button>
+										</div>
+										
+										<p class="text-academia-cream/60 text-sm" role="status" aria-live="polite">
+											Page {currentPage} of {totalPages} 
+											{#if currentLimit >= MAX_LIMIT}
+												(max {MAX_LIMIT} books)
+											{/if}
+										</p>
+									</div>
 								{/if}
 							</div>
 						{/if}
