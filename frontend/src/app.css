@@ -3,20 +3,54 @@
 @tailwind utilities;
 
 @layer base {
+	:root {
+		/* Light mode colors */
+		--bg-base: #faf8f3;
+		--bg-surface: #ffffff;
+		--bg-elevated: #f5f5dc;
+		--text-primary: #1a1a1a;
+		--text-secondary: #2d2d2d;
+		--text-muted: #666666;
+		--border-default: #d4af37;
+	}
+
+	.dark {
+		/* Dark mode colors (Dark Academia) */
+		--bg-base: #1a1a1a;
+		--bg-surface: #2d2d2d;
+		--bg-elevated: #3d3d3d;
+		--text-primary: #f5f5dc;
+		--text-secondary: #e0e0d0;
+		--text-muted: #a0a090;
+		--border-default: #8b7355;
+	}
+
 	body {
-		@apply bg-academia-dark text-academia-cream font-sans;
+		@apply bg-base text-primary font-sans transition-colors duration-300;
+		background-color: var(--bg-base);
+		color: var(--text-primary);
+	}
+
+	/* Smooth theme transitions */
+	* {
+		transition-property: background-color, border-color, color, fill, stroke;
+		transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+		transition-duration: 300ms;
 	}
 
 	/* 
 	 * Color Contrast Notes for WCAG AA Compliance:
 	 * 
-	 * Primary text combinations:
+	 * Dark Mode:
 	 * - academia-cream (#f5f5dc) on academia-dark (#1a1a1a): ~15:1 ✅ Excellent
 	 * - academia-cream on academia-light (#2d2d2d): ~13:1 ✅ Excellent  
 	 * 
-	 * Note: Lower opacity text (e.g., text-academia-cream/60, /40) may have reduced contrast.
+	 * Light Mode:
+	 * - #1a1a1a on #faf8f3: ~16:1 ✅ Excellent
+	 * - #2d2d2d on #ffffff: ~15:1 ✅ Excellent
+	 * 
+	 * Note: Lower opacity text may have reduced contrast.
 	 * Use with caution and ensure minimum 4.5:1 for normal text, 3:1 for large text (WCAG AA).
-	 * For critical text, avoid opacity below /70 for normal text on dark backgrounds.
 	 */
 
 	/* Skip link styles */
@@ -45,7 +79,7 @@
 
 	/* Enhanced focus styles for accessibility */
 	*:focus-visible {
-		outline: 2px solid #d4af37;
+		outline: 2px solid var(--border-default);
 		outline-offset: 2px;
 	}
 
@@ -55,7 +89,7 @@
 	input:focus-visible,
 	select:focus-visible,
 	textarea:focus-visible {
-		outline: 2px solid #d4af37;
+		outline: 2px solid var(--border-default);
 		outline-offset: 2px;
 		z-index: 1;
 	}
@@ -63,7 +97,7 @@
 
 @layer components {
 	.card {
-		@apply bg-academia-light rounded-lg shadow-lg p-6 border border-academia-lighter;
+		@apply bg-surface dark:bg-academia-light rounded-lg shadow-lg p-6 border border-default dark:border-academia-lighter;
 	}
 	
 	.btn {
@@ -71,14 +105,14 @@
 	}
 	
 	.btn-primary {
-		@apply bg-academia-accent text-white hover:bg-academia-gold;
+		@apply bg-academia-accent dark:bg-academia-accent text-white hover:bg-academia-gold dark:hover:bg-academia-gold;
 	}
 	
 	.btn-secondary {
-		@apply bg-academia-lighter text-academia-cream hover:bg-academia-light;
+		@apply bg-elevated dark:bg-academia-lighter text-primary dark:text-academia-cream hover:bg-academia-cream/30 dark:hover:bg-academia-light border border-default/30 dark:border-academia-lighter/50;
 	}
 	
 	.input {
-		@apply w-full px-4 py-2 bg-academia-light border border-academia-lighter rounded-md text-academia-cream placeholder-academia-accent focus:outline-none focus:ring-2 focus:ring-academia-gold;
+		@apply w-full px-4 py-2 bg-surface dark:bg-academia-light border border-default/50 dark:border-academia-lighter rounded-md text-primary dark:text-academia-cream placeholder-text-muted dark:placeholder-academia-accent focus:outline-none focus:ring-2 focus:ring-academia-gold dark:focus:ring-academia-gold;
 	}
 }

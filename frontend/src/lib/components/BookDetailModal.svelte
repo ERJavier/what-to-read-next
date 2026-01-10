@@ -5,6 +5,7 @@
 	import Loading from './Loading.svelte';
 	import ErrorBoundary from './ErrorBoundary.svelte';
 	import ResultsGrid from './ResultsGrid.svelte';
+	import Skeleton from './Skeleton.svelte';
 
 	interface Props {
 		bookId: number;
@@ -198,12 +199,13 @@
 
 		<!-- Modal Body -->
 		<div class="p-6 md:p-8">
-			{#if error}
-				<ErrorBoundary error={error} />
-			{/if}
-
 			{#if loading}
-				<Loading message="Loading book details..." />
+				<div class="space-y-6">
+					<Skeleton variant="text" height="3rem" width="80%" class="mb-4" />
+					<Skeleton variant="text" height="1.5rem" width="60%" lines={2} class="mb-6" />
+					<Skeleton variant="card" height="200px" class="mb-6" />
+					<Skeleton variant="rectangular" height="100px" />
+				</div>
 			{:else if error}
 				<ErrorBoundary error={error} showSuggestions={true} />
 				<div class="mt-4 flex gap-3">
@@ -226,70 +228,105 @@
 				<div id="modal-description" class="sr-only">
 					Book details for {book.title}
 				</div>
-				<!-- Book Title -->
-				<h1
-					id="modal-title"
-					class="text-3xl md:text-4xl font-serif font-bold text-academia-gold mb-4"
-				>
-					{book.title}
-				</h1>
+				
+				<!-- Header Section with Title and Metadata -->
+				<div class="mb-8 pb-6 border-b border-academia-lighter">
+					<h1
+						id="modal-title"
+						class="text-3xl md:text-4xl font-serif font-bold text-academia-gold mb-4 leading-tight"
+					>
+						{book.title}
+					</h1>
 
-				<!-- Authors -->
-				{#if book.authors && book.authors.length > 0}
-					<div class="mb-6">
-						<h2 class="text-lg font-semibold text-academia-cream/80 mb-2">Authors</h2>
-						<p class="text-xl text-academia-cream">
-							{book.authors.join(', ')}
-						</p>
+					<!-- Metadata Row -->
+					<div class="flex flex-wrap gap-4 items-center text-sm text-academia-cream/70">
+						{#if book.first_publish_year}
+							<div class="flex items-center gap-2">
+								<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-academia-cream/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+								</svg>
+								<span class="font-medium">{book.first_publish_year}</span>
+							</div>
+						{/if}
+						
+						{#if book.authors && book.authors.length > 0}
+							<div class="flex items-center gap-2">
+								<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-academia-cream/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+								</svg>
+								<span>{book.authors.length} {book.authors.length === 1 ? 'Author' : 'Authors'}</span>
+							</div>
+						{/if}
+						
+						{#if book.subjects && book.subjects.length > 0}
+							<div class="flex items-center gap-2">
+								<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-academia-cream/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+								</svg>
+								<span>{book.subjects.length} {book.subjects.length === 1 ? 'Subject' : 'Subjects'}</span>
+							</div>
+						{/if}
 					</div>
-				{/if}
+				</div>
 
-				<!-- Publication Year -->
-				{#if book.first_publish_year}
-					<div class="mb-6">
-						<h2 class="text-lg font-semibold text-academia-cream/80 mb-2">
-							First Published
+				<!-- Authors Section -->
+				{#if book.authors && book.authors.length > 0}
+					<div class="mb-8">
+						<h2 class="text-xl font-semibold text-academia-cream mb-3 flex items-center gap-2">
+							<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-academia-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+							</svg>
+							Authors
 						</h2>
-						<p class="text-lg text-academia-accent">{book.first_publish_year}</p>
+						<div class="bg-academia-lighter/30 rounded-lg p-4 border border-academia-lighter">
+							<p class="text-lg text-academia-cream leading-relaxed">
+								{book.authors.join(', ')}
+							</p>
+						</div>
 					</div>
 				{/if}
 
 				<!-- All Subjects -->
 				{#if book.subjects && book.subjects.length > 0}
-					<div class="mb-6">
-						<h2 class="text-lg font-semibold text-academia-cream/80 mb-3">
+					<div class="mb-8">
+						<h2 class="text-xl font-semibold text-academia-cream mb-3 flex items-center gap-2">
+							<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-academia-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+							</svg>
 							Subjects & Genres
 						</h2>
-					<div class="flex flex-wrap gap-2" role="list" aria-label="Subjects and genres">
-						{#each book.subjects as subject}
-							<span
-								class="px-3 py-1.5 bg-academia-lighter rounded-md text-sm text-academia-cream border border-academia-lighter hover:border-academia-accent transition-colors"
-								role="listitem"
-							>
-								{subject}
-							</span>
-						{/each}
-					</div>
-						<p class="text-sm text-academia-cream/60 mt-2">
-							{book.subjects.length} {book.subjects.length === 1 ? 'subject' : 'subjects'}
-						</p>
+						<div class="bg-academia-lighter/30 rounded-lg p-4 border border-academia-lighter">
+							<div class="flex flex-wrap gap-2" role="list" aria-label="Subjects and genres">
+								{#each book.subjects as subject}
+									<span
+										class="px-3 py-1.5 bg-academia-dark/50 rounded-md text-sm font-medium text-academia-cream border border-academia-lighter hover:border-academia-gold hover:bg-academia-lighter/50 transition-all cursor-default"
+										role="listitem"
+										title={subject}
+									>
+										{subject}
+									</span>
+								{/each}
+							</div>
+						</div>
 					</div>
 				{/if}
 
-				<!-- Search Content -->
-				{#if book.search_content}
-					<div class="mb-6">
-						<h2 class="text-lg font-semibold text-academia-cream/80 mb-2">
-							Search Content
+				<!-- Search Content / Description -->
+				{#if book.search_content && book.search_content !== book.title}
+					<div class="mb-8">
+						<h2 class="text-xl font-semibold text-academia-cream mb-3 flex items-center gap-2">
+							<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-academia-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+							</svg>
+							Description
 						</h2>
-						<p
-							class="text-academia-cream/90 leading-relaxed bg-academia-lighter p-4 rounded-md border border-academia-lighter"
-						>
-							{book.search_content}
-						</p>
-						<p class="text-sm text-academia-cream/60 mt-2">
-							This content was used to generate the book's semantic embedding for similarity
-							search.
+						<div class="bg-academia-lighter/30 rounded-lg p-5 border border-academia-lighter">
+							<p class="text-academia-cream/90 leading-relaxed text-base whitespace-pre-wrap">
+								{book.search_content}
+							</p>
+						</div>
+						<p class="text-xs text-academia-cream/50 mt-3 italic">
+							This content was used to generate the book's semantic embedding for similarity search.
 						</p>
 					</div>
 				{/if}
@@ -330,7 +367,11 @@
 					</h2>
 
 					{#if loadingRelated}
-						<Loading message="Finding similar books..." />
+						<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+							{#each Array(6) as _}
+								<Skeleton variant="card" height="300px" />
+							{/each}
+						</div>
 					{:else if relatedBooksError}
 						<div class="card bg-yellow-900/20 border-yellow-500 p-4">
 							<p class="text-yellow-300 text-sm">

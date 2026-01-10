@@ -174,6 +174,24 @@
 		return (count / max) * 100;
 	}
 
+	let hoveredItem: { type: string; label: string; count: number } | null = $state(null);
+	
+	function handleBarHover(type: string, label: string, count: number) {
+		hoveredItem = { type, label, count };
+	}
+	
+	function handleBarLeave() {
+		hoveredItem = null;
+	}
+	
+	function handleBarClick(type: string, label: string) {
+		// Filter search history or trigger a search based on the clicked item
+		if (type === 'genre' || type === 'author') {
+			// Could trigger a search or filter action
+			console.log(`Clicked ${type}: ${label}`);
+		}
+	}
+
 	// Track previous history to detect actual changes
 	let previousHistoryKey = $state<string>('');
 	
@@ -394,20 +412,44 @@
 						<h4 class="text-sm font-semibold text-academia-cream mb-3">Top Genres</h4>
 						<div class="space-y-2">
 							{#each stats.favoriteGenres.slice(0, 8) as genre}
-								<div>
+								{@const isHovered = hoveredItem?.type === 'genre' && hoveredItem?.label === genre.genre}
+								<div
+									class="group cursor-pointer"
+									onmouseenter={() => handleBarHover('genre', genre.genre, genre.count)}
+									onmouseleave={handleBarLeave}
+									onclick={() => handleBarClick('genre', genre.genre)}
+									onkeydown={(e) => {
+										if (e.key === 'Enter' || e.key === ' ') {
+											e.preventDefault();
+											handleBarClick('genre', genre.genre);
+										}
+									}}
+									role="button"
+									tabindex="0"
+									aria-label="Genre: {genre.genre}, Count: {genre.count}"
+								>
 									<div class="flex justify-between items-center mb-1">
-										<span class="text-xs text-academia-cream/80">{genre.genre}</span>
-										<span class="text-xs text-academia-accent">{genre.count}</span>
+										<span class="text-xs font-medium text-academia-cream/90 group-hover:text-academia-gold transition-colors">
+											{genre.genre}
+										</span>
+										<span class="text-xs font-semibold text-academia-accent group-hover:text-academia-gold transition-colors">
+											{genre.count}
+										</span>
 									</div>
-									<div class="h-4 bg-academia-dark rounded overflow-hidden">
+									<div class="h-4 bg-academia-dark rounded overflow-hidden border border-academia-lighter/30 group-hover:border-academia-gold/50 transition-all">
 										<div
-											class="h-full bg-academia-gold transition-all duration-300"
+											class="h-full bg-gradient-to-r from-academia-gold to-academia-accent transition-all duration-300 group-hover:shadow-lg group-hover:shadow-academia-gold/30 {isHovered ? 'scale-105' : ''}"
 											style="width: {getBarWidth(genre.count, maxGenreCount)}%"
 										></div>
 									</div>
 								</div>
 							{/each}
 						</div>
+						{#if hoveredItem && hoveredItem.type === 'genre'}
+							<div class="mt-3 p-2 bg-academia-dark/50 rounded text-xs text-academia-cream/70 border border-academia-lighter">
+								<strong>{hoveredItem.label}:</strong> {hoveredItem.count} {hoveredItem.count === 1 ? 'book' : 'books'}
+							</div>
+						{/if}
 					</div>
 				{/if}
 
@@ -418,20 +460,44 @@
 						<h4 class="text-sm font-semibold text-academia-cream mb-3">Top Authors</h4>
 						<div class="space-y-2">
 							{#each stats.favoriteAuthors.slice(0, 8) as author}
-								<div>
+								{@const isHovered = hoveredItem?.type === 'author' && hoveredItem?.label === author.author}
+								<div
+									class="group cursor-pointer"
+									onmouseenter={() => handleBarHover('author', author.author, author.count)}
+									onmouseleave={handleBarLeave}
+									onclick={() => handleBarClick('author', author.author)}
+									onkeydown={(e) => {
+										if (e.key === 'Enter' || e.key === ' ') {
+											e.preventDefault();
+											handleBarClick('author', author.author);
+										}
+									}}
+									role="button"
+									tabindex="0"
+									aria-label="Author: {author.author}, Count: {author.count}"
+								>
 									<div class="flex justify-between items-center mb-1">
-										<span class="text-xs text-academia-cream/80">{author.author}</span>
-										<span class="text-xs text-academia-accent">{author.count}</span>
+										<span class="text-xs font-medium text-academia-cream/90 group-hover:text-academia-gold transition-colors truncate flex-1 mr-2">
+											{author.author}
+										</span>
+										<span class="text-xs font-semibold text-academia-accent group-hover:text-academia-gold transition-colors flex-shrink-0">
+											{author.count}
+										</span>
 									</div>
-									<div class="h-4 bg-academia-dark rounded overflow-hidden">
+									<div class="h-4 bg-academia-dark rounded overflow-hidden border border-academia-lighter/30 group-hover:border-academia-accent/50 transition-all">
 										<div
-											class="h-full bg-academia-accent transition-all duration-300"
+											class="h-full bg-gradient-to-r from-academia-accent to-academia-gold/70 transition-all duration-300 group-hover:shadow-lg group-hover:shadow-academia-accent/30 {isHovered ? 'scale-105' : ''}"
 											style="width: {getBarWidth(author.count, maxAuthorCount)}%"
 										></div>
 									</div>
 								</div>
 							{/each}
 						</div>
+						{#if hoveredItem && hoveredItem.type === 'author'}
+							<div class="mt-3 p-2 bg-academia-dark/50 rounded text-xs text-academia-cream/70 border border-academia-lighter">
+								<strong>{hoveredItem.label}:</strong> {hoveredItem.count} {hoveredItem.count === 1 ? 'book' : 'books'}
+							</div>
+						{/if}
 					</div>
 				{/if}
 
@@ -442,20 +508,44 @@
 						<h4 class="text-sm font-semibold text-academia-cream mb-3">Decade Distribution</h4>
 						<div class="space-y-2">
 							{#each stats.yearDistribution as year}
-								<div>
+								{@const isHovered = hoveredItem?.type === 'year' && hoveredItem?.label === `${year.year}s`}
+								<div
+									class="group cursor-pointer"
+									onmouseenter={() => handleBarHover('year', `${year.year}s`, year.count)}
+									onmouseleave={handleBarLeave}
+									onclick={() => handleBarClick('year', `${year.year}s`)}
+									onkeydown={(e) => {
+										if (e.key === 'Enter' || e.key === ' ') {
+											e.preventDefault();
+											handleBarClick('year', `${year.year}s`);
+										}
+									}}
+									role="button"
+									tabindex="0"
+									aria-label="Decade: {year.year}s, Count: {year.count}"
+								>
 									<div class="flex justify-between items-center mb-1">
-										<span class="text-xs text-academia-cream/80">{year.year}s</span>
-										<span class="text-xs text-academia-accent">{year.count}</span>
+										<span class="text-xs font-medium text-academia-cream/90 group-hover:text-academia-gold transition-colors">
+											{year.year}s
+										</span>
+										<span class="text-xs font-semibold text-academia-accent group-hover:text-academia-gold transition-colors">
+											{year.count}
+										</span>
 									</div>
-									<div class="h-4 bg-academia-dark rounded overflow-hidden">
+									<div class="h-4 bg-academia-dark rounded overflow-hidden border border-academia-lighter/30 group-hover:border-academia-gold/50 transition-all">
 										<div
-											class="h-full bg-academia-gold/70 transition-all duration-300"
+											class="h-full bg-gradient-to-r from-academia-gold/70 to-academia-gold transition-all duration-300 group-hover:shadow-lg group-hover:shadow-academia-gold/30 {isHovered ? 'scale-105' : ''}"
 											style="width: {getBarWidth(year.count, maxYearCount)}%"
 										></div>
 									</div>
 								</div>
 							{/each}
 						</div>
+						{#if hoveredItem && hoveredItem.type === 'year'}
+							<div class="mt-3 p-2 bg-academia-dark/50 rounded text-xs text-academia-cream/70 border border-academia-lighter">
+								<strong>{hoveredItem.label}:</strong> {hoveredItem.count} {hoveredItem.count === 1 ? 'book' : 'books'}
+							</div>
+						{/if}
 					</div>
 				{/if}
 
@@ -466,20 +556,44 @@
 						<h4 class="text-sm font-semibold text-academia-cream mb-3">Most Searched Queries</h4>
 						<div class="space-y-2">
 							{#each stats.mostSearchedQueries.slice(0, 8) as query}
-								<div>
-									<div class="flex justify-between items-center mb-1">
-										<span class="text-xs text-academia-cream/80 truncate">{query.query}</span>
-										<span class="text-xs text-academia-accent">{query.count}</span>
+								{@const isHovered = hoveredItem?.type === 'query' && hoveredItem?.label === query.query}
+								<div
+									class="group cursor-pointer"
+									onmouseenter={() => handleBarHover('query', query.query, query.count)}
+									onmouseleave={handleBarLeave}
+									onclick={() => handleBarClick('query', query.query)}
+									onkeydown={(e) => {
+										if (e.key === 'Enter' || e.key === ' ') {
+											e.preventDefault();
+											handleBarClick('query', query.query);
+										}
+									}}
+									role="button"
+									tabindex="0"
+									aria-label="Query: {query.query}, Searched: {query.count} times"
+								>
+									<div class="flex justify-between items-center mb-1 gap-2">
+										<span class="text-xs font-medium text-academia-cream/90 group-hover:text-academia-gold transition-colors truncate flex-1">
+											{query.query}
+										</span>
+										<span class="text-xs font-semibold text-academia-accent group-hover:text-academia-gold transition-colors flex-shrink-0">
+											{query.count}×
+										</span>
 									</div>
-									<div class="h-4 bg-academia-dark rounded overflow-hidden">
+									<div class="h-4 bg-academia-dark rounded overflow-hidden border border-academia-lighter/30 group-hover:border-academia-accent/50 transition-all">
 										<div
-											class="h-full bg-academia-accent/70 transition-all duration-300"
+											class="h-full bg-gradient-to-r from-academia-accent/70 to-academia-accent transition-all duration-300 group-hover:shadow-lg group-hover:shadow-academia-accent/30 {isHovered ? 'scale-105' : ''}"
 											style="width: {getBarWidth(query.count, maxQueryCount)}%"
 										></div>
 									</div>
 								</div>
 							{/each}
 						</div>
+						{#if hoveredItem && hoveredItem.type === 'query'}
+							<div class="mt-3 p-2 bg-academia-dark/50 rounded text-xs text-academia-cream/70 border border-academia-lighter">
+								<strong>"{hoveredItem.label}":</strong> searched {hoveredItem.count} {hoveredItem.count === 1 ? 'time' : 'times'}
+							</div>
+						{/if}
 					</div>
 				{/if}
 			</div>
