@@ -115,7 +115,8 @@ async def fetch_cover_url_from_work(work_key: str) -> Optional[str]:
         # Fetch work editions: /works/{work_key}/editions.json
         url = f"{OPEN_LIBRARY_API_BASE}{normalized_work_key}/editions.json?limit=1"
         
-        response = await client.get(url)
+        # Add timeout to prevent hanging (client has global timeout, but explicit is clearer)
+        response = await client.get(url, timeout=8.0)
         response.raise_for_status()
         
         data = response.json()

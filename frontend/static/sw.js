@@ -49,6 +49,11 @@ self.addEventListener('fetch', (event) => {
 	const { request } = event;
 	const url = new URL(request.url);
 
+	// Skip WebSocket upgrade requests (they shouldn't go through fetch, but just in case)
+	if (request.headers.get('upgrade') === 'websocket') {
+		return;
+	}
+
 	// Skip non-GET requests
 	if (request.method !== 'GET') {
 		return;

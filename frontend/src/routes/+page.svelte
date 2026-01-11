@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
+	import { goto, afterNavigate } from '$app/navigation';
 	import type { Book, SearchHistoryEntry, FilterPreferences } from '$lib/types';
 	import type { Component } from 'svelte';
 	import { getRecommendations } from '$lib/api';
@@ -93,6 +93,12 @@
 			loadRecentlyViewed();
 		}
 	}
+
+	// Refresh recently viewed list after navigation (e.g., when returning from book detail page)
+	afterNavigate(() => {
+		loadRecentlyViewed();
+		loadSearchHistory();
+	});
 
 	onMount(() => {
 		loadSearchHistory();

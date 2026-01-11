@@ -12,7 +12,6 @@
 
 	let { value = $bindable(''), onSearch, placeholder = 'Search for books...', showSuggestions = true }: Props = $props();
 	
-	let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 	let searchInput: HTMLInputElement | null = $state(null);
 	let suggestions = $state<string[]>([]);
 	let showSuggestionsDropdown = $state(false);
@@ -62,23 +61,11 @@
 		const target = e.target as HTMLInputElement;
 		value = target.value;
 		updateSuggestions(value);
-		
-		if (debounceTimer) {
-			clearTimeout(debounceTimer);
-		}
-		
-		debounceTimer = setTimeout(() => {
-			if (value.trim()) {
-				onSearch?.(value.trim());
-			}
-		}, 300);
+		// Search is only triggered on form submit (Enter key or button click)
 	}
 
 	function handleSubmit(e: Event) {
 		e.preventDefault();
-		if (debounceTimer) {
-			clearTimeout(debounceTimer);
-		}
 		if (selectedSuggestionIndex >= 0 && suggestions[selectedSuggestionIndex]) {
 			value = suggestions[selectedSuggestionIndex];
 			showSuggestionsDropdown = false;

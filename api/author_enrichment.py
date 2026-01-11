@@ -17,6 +17,10 @@ OPEN_LIBRARY_API_BASE = "https://openlibrary.org"
 # Cache for author key -> name mappings (in-memory cache)
 _author_cache: Dict[str, Optional[str]] = {}
 
+# Locks for author keys being fetched to prevent duplicate concurrent requests
+_author_locks: Dict[str, asyncio.Lock] = {}
+_locks_lock: Optional[asyncio.Lock] = None  # Lock to protect _author_locks dictionary (lazy init)
+
 # HTTP client with timeout
 _http_client: Optional[httpx.AsyncClient] = None
 
@@ -26,8 +30,8 @@ def get_http_client() -> httpx.AsyncClient:
     global _http_client
     if _http_client is None:
         _http_client = httpx.AsyncClient(
-            timeout=httpx.Timeout(10.0, connect=5.0),
-            limits=httpx.Limits(max_keepalive_connections=10, max_connections=20),
+            timeout=httpx.Timeout(8.0, connect=3.0),  # Reduced timeout to fail faster
+            limits=httpx.Limits(max_keepalive_connections=20, max_connections=50),  # Increased connections for parallel processing
             follow_redirects=True
         )
     return _http_client
@@ -63,6 +67,18 @@ def extract_author_key(author_entry: str) -> Optional[str]:
     return key if key else None
 
 
+async def _get_author_lock(author_key: str) -> asyncio.Lock:
+    """Get or create a lock for an author key to prevent duplicate concurrent fetches."""
+    global _locks_lock
+    if _locks_lock is None:
+        _locks_lock = asyncio.Lock()
+    
+    async with _locks_lock:
+        if author_key not in _author_locks:
+            _author_locks[author_key] = asyncio.Lock()
+        return _author_locks[author_key]
+
+
 async def fetch_author_name(author_key: str) -> Optional[str]:
     """
     Fetch author name from Open Library API.
@@ -73,7 +89,7 @@ async def fetch_author_name(author_key: str) -> Optional[str]:
     Returns:
         Author name if found, None otherwise
     """
-    # Check cache first
+    # Check cache first (before acquiring lock)
     if author_key in _author_cache:
         return _author_cache[author_key]
     
@@ -83,54 +99,61 @@ async def fetch_author_name(author_key: str) -> Optional[str]:
         _author_cache[author_key] = author_key
         return author_key
     
-    try:
-        client = get_http_client()
-        # Open Library API endpoint: /authors/{key}.json
-        url = f"{OPEN_LIBRARY_API_BASE}/authors/{quote(author_key)}.json"
+    # Acquire lock for this author key to prevent duplicate concurrent fetches
+    lock = await _get_author_lock(author_key)
+    async with lock:
+        # Check cache again after acquiring lock (another coroutine might have fetched it)
+        if author_key in _author_cache:
+            return _author_cache[author_key]
         
-        response = await client.get(url)
-        response.raise_for_status()
-        
-        data = response.json()
-        # Extract name from response
-        # Open Library author records have "name" field in the JSON response
-        # The response structure: {"name": "Author Name", "key": "/authors/OL123A", ...}
-        author_name = data.get("name")
-        
-        if author_name:
-            # Cache the result
-            _author_cache[author_key] = author_name
-            logger.debug(f"Fetched author name for {author_key}: {author_name}")
-            return author_name
-        else:
-            # Try alternative fields if "name" is not present (some records might use "personal_name" or other fields)
-            # Fallback to personal_name if available
-            personal_name = data.get("personal_name")
-            if personal_name:
-                _author_cache[author_key] = personal_name
-                logger.debug(f"Fetched author name (personal_name) for {author_key}: {personal_name}")
-                return personal_name
+        try:
+            client = get_http_client()
+            # Open Library API endpoint: /authors/{key}.json
+            url = f"{OPEN_LIBRARY_API_BASE}/authors/{quote(author_key)}.json"
             
-            # No name found, cache None to avoid repeated requests
-            _author_cache[author_key] = None
-            logger.warning(f"No name found for author key: {author_key} in response: {list(data.keys())}")
-            return None
+            response = await client.get(url)
+            response.raise_for_status()
             
-    except httpx.HTTPStatusError as e:
-        if e.response.status_code == 404:
-            logger.debug(f"Author not found: {author_key}")
-            _author_cache[author_key] = None
+            data = response.json()
+            # Extract name from response
+            # Open Library author records have "name" field in the JSON response
+            # The response structure: {"name": "Author Name", "key": "/authors/OL123A", ...}
+            author_name = data.get("name")
+            
+            if author_name:
+                # Cache the result
+                _author_cache[author_key] = author_name
+                logger.debug(f"Fetched author name for {author_key}: {author_name}")
+                return author_name
+            else:
+                # Try alternative fields if "name" is not present (some records might use "personal_name" or other fields)
+                # Fallback to personal_name if available
+                personal_name = data.get("personal_name")
+                if personal_name:
+                    _author_cache[author_key] = personal_name
+                    logger.debug(f"Fetched author name (personal_name) for {author_key}: {personal_name}")
+                    return personal_name
+                
+                # No name found, cache None to avoid repeated requests
+                _author_cache[author_key] = None
+                logger.warning(f"No name found for author key: {author_key} in response: {list(data.keys())}")
+                return None
+                
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                logger.debug(f"Author not found: {author_key}")
+                _author_cache[author_key] = None
+                return None
+            else:
+                logger.warning(f"HTTP error fetching author {author_key}: {e.response.status_code}")
+                # Don't cache errors, allow retry
+                return None
+        except httpx.TimeoutException:
+            logger.warning(f"Timeout fetching author: {author_key}")
             return None
-        else:
-            logger.warning(f"HTTP error fetching author {author_key}: {e.response.status_code}")
-            # Don't cache errors, allow retry
+        except Exception as e:
+            logger.error(f"Error fetching author {author_key}: {e}", exc_info=True)
             return None
-    except httpx.TimeoutException:
-        logger.warning(f"Timeout fetching author: {author_key}")
-        return None
-    except Exception as e:
-        logger.error(f"Error fetching author {author_key}: {e}", exc_info=True)
-        return None
 
 
 def is_author_key(entry: str) -> bool:
@@ -209,7 +232,7 @@ async def enrich_author_names(author_entries: List[str]) -> List[str]:
         return [info[1] for info in entries_info]
     
     # Fetch author names in parallel (but limit concurrency)
-    semaphore = asyncio.Semaphore(10)  # Max 10 concurrent requests
+    semaphore = asyncio.Semaphore(20)  # Increased to 20 for better parallelization
     
     async def fetch_with_limit(key: str) -> tuple[str, Optional[str]]:
         async with semaphore:

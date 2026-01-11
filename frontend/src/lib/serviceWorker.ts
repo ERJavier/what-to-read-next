@@ -15,6 +15,12 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
 		return null;
 	}
 
+	// Skip registration in development mode to avoid HMR issues
+	if (import.meta.env.DEV) {
+		console.log('Service worker registration skipped in development mode');
+		return null;
+	}
+
 	try {
 		// Register service worker
 		registration = await navigator.serviceWorker.register('/sw.js', {
@@ -147,6 +153,23 @@ export async function sendMessageToServiceWorker(message: any): Promise<any> {
  */
 export function initServiceWorker(): void {
 	if (!browser) {
+		return;
+	}
+
+	// Only register service worker in production (skip in development to avoid HMR issues)
+	if (import.meta.env.DEV) {
+		// Always unregister any existing service workers in development
+		navigator.serviceWorker.getRegistrations().then((registrations) => {
+			registrations.forEach((registration) => {
+				registration.unregister().then((success) => {
+					if (success) {
+						console.log('Service worker unregistered for development mode');
+					}
+				});
+			});
+		}).catch(() => {
+			// Silently fail if service worker API is not available
+		});
 		return;
 	}
 

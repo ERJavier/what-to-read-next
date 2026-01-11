@@ -263,24 +263,28 @@ async def get_recommendations(request: RecommendationRequest):
                 return empty_result
             
             # Format response and enrich author names and cover URLs
-            books = []
-            # Fetch covers in parallel for better performance
-            cover_urls = await asyncio.gather(*[get_cover_url(row[1]) for row in results])
+            # Fetch covers and enrich authors in parallel for better performance
+            cover_tasks = [get_cover_url(row[1]) for row in results]
+            author_tasks = [enrich_author_names(row[3] or []) for row in results]
             
+            # Execute all enrichment operations in parallel
+            cover_urls, enriched_authors_list = await asyncio.gather(
+                asyncio.gather(*cover_tasks),
+                asyncio.gather(*author_tasks)
+            )
+            
+            # Build response with enriched data
+            books = []
             for idx, row in enumerate(results):
                 book_id, ol_key, title, authors, year, subjects, similarity = row
-                # Enrich author names from Open Library API if needed
-                enriched_authors = await enrich_author_names(authors or [])
-                # Use pre-fetched cover URL
-                cover_url = cover_urls[idx]
                 books.append(BookResponse(
                     id=book_id,
                     ol_key=ol_key,
                     title=title,
-                    authors=enriched_authors,
+                    authors=enriched_authors_list[idx],
                     first_publish_year=year,
                     subjects=subjects or [],
-                    cover_url=cover_url,
+                    cover_url=cover_urls[idx],
                     similarity=float(similarity)
                 ))
             
