@@ -54,5 +54,9 @@ jobs:
 
       - name: Verify Docker image
         run: |
-          docker images | grep whattoread-${{ matrix.dockerfile.name }}:test
-          echo "✓ Docker image built successfully"
+          if docker images | grep -q "whattoread-${{ matrix.dockerfile.name }}:test"; then
+            echo "✓ Docker image built successfully"
+          else
+            echo "✗ Docker image not found"
+            exit 1
+          fi

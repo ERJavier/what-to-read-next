@@ -36,12 +36,14 @@ jobs:
 
       - name: Run type check
         working-directory: ./frontend
-        run: pnpm check || echo "Type check found issues (non-blocking for now)"
+        run: pnpm check
         continue-on-error: true
 
       - name: Run tests
         working-directory: ./frontend
-        run: pnpm test --run
+        run: pnpm exec vitest run
+        env:
+          CI: true
 
       - name: Build frontend
         working-directory: ./frontend
