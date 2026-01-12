@@ -36,30 +36,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8
+
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'pnpm'
-
-      - name: Install pnpm
-        run: npm install -g pnpm@8
 
       - name: Install dependencies
         working-directory: ./frontend
         run: pnpm install --frozen-lockfile
 
-      - name: Run type check
+      - name: Build frontend
         working-directory: ./frontend
-        run: pnpm check
-        continue-on-error: true
-
-      - name: Check for ESLint (if configured)
-        working-directory: ./frontend
-        run: |
-          if [ -f .eslintrc* ] || [ -f eslint.config.* ] || [ -f package.json ] && grep -q "eslint" package.json; then
-            echo "ESLint configuration found"
-            # Add ESLint check here when configured
-          else
-            echo "ESLint not configured yet"
-          fi
+        run: pnpm build

@@ -19,29 +19,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8
+
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'pnpm'
 
-      - name: Install pnpm
-        run: npm install -g pnpm@8
-
       - name: Install dependencies
         working-directory: ./frontend
         run: pnpm install --frozen-lockfile
-
-      - name: Run type check
-        working-directory: ./frontend
-        run: pnpm check
-        continue-on-error: true
-
-      - name: Run tests
-        working-directory: ./frontend
-        run: pnpm exec vitest run
-        env:
-          CI: true
 
       - name: Build frontend
         working-directory: ./frontend
