@@ -25,10 +25,8 @@ jobs:
           node-version: '20'
           cache: 'pnpm'
 
-      - name: Enable Corepack and activate pnpm
-        run: |
-          corepack enable
-          corepack prepare pnpm@8 --activate
+      - name: Install pnpm
+        run: npm install -g pnpm@8
 
       - name: Install dependencies
         working-directory: ./frontend
