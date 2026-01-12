@@ -26,6 +26,21 @@ export default defineConfig({
 						// Other vendor libraries
 						return 'vendor';
 					}
+					
+					// Split routes into separate chunks for better code splitting
+					if (id.includes('/routes/')) {
+						if (id.includes('/routes/books/')) {
+							return 'route-books';
+						}
+						if (id.includes('/routes/saved/')) {
+							return 'route-saved';
+						}
+						if (id.includes('/routes/taste-profile/')) {
+							return 'route-taste-profile';
+						}
+						return 'routes';
+					}
+					
 					// Split heavy components into separate chunks
 					if (id.includes('/lib/components/EnhancedTasteProfile')) {
 						return 'enhanced-taste-profile';
@@ -36,13 +51,25 @@ export default defineConfig({
 					if (id.includes('/lib/components/SwipeStack')) {
 						return 'swipe-stack';
 					}
+					if (id.includes('/lib/components/ResultsGrid')) {
+						return 'results-grid';
+					}
+					
+					// Split utility libraries
+					if (id.includes('/lib/performance')) {
+						return 'performance-utils';
+					}
+					if (id.includes('/lib/imagePreloader')) {
+						return 'image-utils';
+					}
+					if (id.includes('/lib/prefetch')) {
+						return 'prefetch-utils';
+					}
 				},
 				// Optimize chunk file names for better caching
 				chunkFileNames: 'chunks/[name]-[hash].js',
 				entryFileNames: 'entries/[name]-[hash].js',
-				assetFileNames: 'assets/[name]-[hash].[ext]',
-				// Tree shaking optimization
-				preserveEntrySignatures: 'strict'
+				assetFileNames: 'assets/[name]-[hash].[ext]'
 			},
 			// Enable tree shaking
 			treeshake: {

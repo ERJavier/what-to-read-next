@@ -96,4 +96,5 @@ prd.md
 .cursor/*
 README.DOCKER.md
 frontend/docs/
-
+.github/ISSUE_TEMPLATE/
+MVP_LAUNCH_CHECKLIST.md

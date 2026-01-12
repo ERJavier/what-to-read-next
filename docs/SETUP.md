@@ -90,9 +90,9 @@ CREATE EXTENSION IF NOT EXISTS vector;
 
 ### Create .env File
 
-1. **Copy the template**:
+1. **Copy the example file**:
    ```bash
-   cp env.template .env
+   cp .env.example .env
    ```
 
 2. **Edit `.env` and set your values**:
@@ -104,7 +104,7 @@ CREATE EXTENSION IF NOT EXISTS vector;
    ```
 
 3. **Required variables to set**:
-   - `POSTGRES_PASSWORD`: Set a strong password (required)
+   - `POSTGRES_PASSWORD`: Set a strong password (required) - replace `your_secure_password_here`
    - `DATABASE_URL`: Will be auto-constructed from other variables, or set manually
 
 4. **Generate a secure password** (optional):
@@ -118,16 +118,22 @@ CREATE EXTENSION IF NOT EXISTS vector;
 
 ### Environment Variables Reference
 
-The `.env` file should contain:
+See `.env.example` in the root directory for a complete list of all available environment variables with descriptions and defaults.
+
+**Required variables:**
+- `POSTGRES_PASSWORD`: **REQUIRED** - Database password (must be changed from the example)
+
+**Common optional variables:**
 - `POSTGRES_USER`: Database user (default: `whattoread`)
-- `POSTGRES_PASSWORD`: **REQUIRED** - Database password
 - `POSTGRES_DB`: Database name (default: `whattoread`)
-- `DATABASE_URL`: Full connection string (auto-constructed or manual)
+- `POSTGRES_HOST`: Database host (default: `localhost`)
+- `POSTGRES_PORT`: Database port (default: `5432`)
+- `DATABASE_URL`: Full connection string (auto-constructed if not provided)
 - `API_HOST`: API host (default: `0.0.0.0`)
 - `API_PORT`: API port (default: `8000`)
 - `EMBEDDING_MODEL`: ML model name (default: `all-MiniLM-L6-v2`)
 
-**Note**: The `.env` file is already in `.gitignore` and will not be committed to the repository.
+**Note**: The `.env` file is already in `.gitignore` and will not be committed to the repository. Always use `.env.example` as your template.
 
 ## Step 5: Set Up Database Schema
 

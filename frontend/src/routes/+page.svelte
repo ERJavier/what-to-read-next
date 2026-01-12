@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
+	import { goto, afterNavigate } from '$app/navigation';
 	import type { Book, SearchHistoryEntry, FilterPreferences } from '$lib/types';
 	import type { Component } from 'svelte';
 	import { getRecommendations } from '$lib/api';
@@ -9,6 +9,8 @@
 	import { getFilterPreferences, saveFilterPreferences } from '$lib/filterPreferences';
 	import { applyFiltersAndSort } from '$lib/filterUtils';
 	import { getRecentlyViewedBooks, removeFromRecentlyViewed, clearRecentlyViewed } from '$lib/recentlyViewed';
+	import { prefetchBookDetails } from '$lib/prefetch';
+	import { performanceMonitor } from '$lib/performance';
 	import SearchBar from '$lib/components/SearchBar.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 	import ErrorBoundary from '$lib/components/ErrorBoundary.svelte';
@@ -45,12 +47,32 @@
 	let searchBarRef: any = $state(null);
 	let swipeStackRef: any = $state(null);
 	let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
+	let showMobileNav = $state(false);
 
-	// Apply filters and sorting to books
+	// Apply filters and sorting to books with memoization
+	// Use derived state to avoid unnecessary recalculations
 	let books = $derived(applyFiltersAndSort(allBooks, filterPreferences));
 	let currentPage = $derived(Math.ceil(currentLimit / INITIAL_LIMIT));
 	let totalPages = $derived(Math.ceil(MAX_LIMIT / INITIAL_LIMIT));
-	let pageNumbers = $derived(Array.from({ length: Math.min(totalPages, 10) }, (_, i) => i + 1));
+	
+	// Memoize page numbers calculation to avoid recreating array on every render
+	let pageNumbers = $derived.by(() => {
+		const total = Math.ceil(MAX_LIMIT / INITIAL_LIMIT);
+		const maxVisible = 10;
+		const current = Math.ceil(currentLimit / INITIAL_LIMIT);
+		
+		// Only recalculate if current page or total pages changed
+		if (total <= maxVisible) {
+			return Array.from({ length: total }, (_, i) => i + 1);
+		}
+		
+		// Calculate visible page range
+		const start = Math.max(1, current - Math.floor(maxVisible / 2));
+		const end = Math.min(total, start + maxVisible - 1);
+		const actualStart = Math.max(1, end - maxVisible + 1);
+		
+		return Array.from({ length: end - actualStart + 1 }, (_, i) => actualStart + i);
+	});
 
 	function loadSearchHistory() {
 		searchHistory = getSearchHistory();
@@ -72,6 +94,12 @@
 		}
 	}
 
+	// Refresh recently viewed list after navigation (e.g., when returning from book detail page)
+	afterNavigate(() => {
+		loadRecentlyViewed();
+		loadSearchHistory();
+	});
+
 	onMount(() => {
 		loadSearchHistory();
 		loadRecentlyViewed();
@@ -88,6 +116,13 @@
 		import('$lib/components/KeyboardShortcutsModal.svelte').then(module => {
 			KeyboardShortcutsModalComponent = module.default;
 		}).catch(err => console.error('Failed to load KeyboardShortcutsModal:', err));
+		
+		// Prefetch common navigation routes in the background
+		import('$lib/prefetch').then(({ setupIntelligentPrefetching }) => {
+			setupIntelligentPrefetching();
+		}).catch(() => {
+			// Silently fail - prefetching is an optimization
+		});
 		
 		// Listen for storage changes to update the list when history changes elsewhere
 		const handleStorageChange = () => {
@@ -154,8 +189,20 @@
 		hasMoreResults = false; // Reset until we know otherwise
 		
 		try {
-			const results = await getRecommendations({ query, limit: searchLimit });
+			// Measure search performance
+			const results = await performanceMonitor.measure('search', async () => {
+				return await getRecommendations({ query, limit: searchLimit });
+			});
+			
 			allBooks = results; // Store all books, filtering will be applied reactively
+			
+			// Prefetch book detail pages for first batch of results
+			if (results.length > 0) {
+				const bookIdsToPrefetch = results.slice(0, 10).map(book => book.id).filter(id => id !== undefined) as number[];
+				if (bookIdsToPrefetch.length > 0) {
+					prefetchBookDetails(bookIdsToPrefetch);
+				}
+			}
 			
 			// Check if there might be more results (if we got exactly the requested amount)
 			hasMoreResults = results.length === searchLimit && searchLimit < MAX_LIMIT;
@@ -168,12 +215,17 @@
 			showBackToTop = false;
 			window.scrollTo({ top: 0, behavior: 'smooth' });
 		} catch (e) {
-			const errorMessage = e instanceof Error ? e.message : 'Failed to search';
-			error = new Error(errorMessage);
-			error = e instanceof Error ? e : new Error('Failed to search');
+			console.error('Search error:', e);
+			// Create error with user-friendly message
+			if (e instanceof Error) {
+				error = e;
+			} else {
+				error = new Error('Failed to search. Please try again.');
+			}
 			allBooks = [];
 			hasMoreResults = false;
 		} finally {
+			// Always reset loading state, even if there's an error
 			loading = false;
 		}
 	}
@@ -326,15 +378,15 @@
 	Skip to main content
 </a>
 
-<div class="min-h-screen p-4 md:p-8">
-	<header class="text-center mb-8 relative">
+<div class="min-h-screen p-2 sm:p-4 md:p-6 lg:p-8">
+	<header class="text-center mb-4 sm:mb-6 md:mb-8 relative px-2">
 		<div class="absolute top-0 right-0 md:right-4">
 			<ThemeToggle />
 		</div>
-		<h1 class="text-4xl md:text-5xl font-serif font-bold text-academia-gold dark:text-academia-gold mb-4">
+		<h1 class="text-3xl sm:text-4xl md:text-5xl font-serif font-bold text-academia-gold dark:text-academia-gold mb-2 sm:mb-4">
 			WhatToRead
 		</h1>
-		<p class="text-primary/80 dark:text-academia-cream/80 text-lg mb-6">
+		<p class="text-primary/80 dark:text-academia-cream/80 text-base sm:text-lg mb-4 sm:mb-6 px-2">
 			Discover your next favorite book through semantic search
 		</p>
 		<Tooltip text="Press / to focus the search bar">
@@ -342,76 +394,111 @@
 		</Tooltip>
 	</header>
 
-	<nav aria-label="View and navigation options" class="flex gap-4 mb-6 justify-center flex-wrap">
-		<Tooltip text="Press ← → arrow keys to swipe (in swipe mode)">
-			<button
-				class="btn {viewMode === 'swipe' ? 'btn-primary' : 'btn-secondary'}"
-				onclick={() => viewMode = 'swipe'}
-				aria-label="Switch to swipe view mode"
-				aria-pressed={viewMode === 'swipe'}
-			>
-				Swipe
-			</button>
-		</Tooltip>
+	<!-- Mobile Navigation Toggle -->
+	<div class="md:hidden mb-4 px-2">
 		<button
-			class="btn {viewMode === 'grid' ? 'btn-primary' : 'btn-secondary'}"
-			onclick={() => viewMode = 'grid'}
-			aria-label="Switch to grid view mode"
-			aria-pressed={viewMode === 'grid'}
+			class="btn btn-secondary w-full flex items-center justify-between"
+			onclick={() => showMobileNav = !showMobileNav}
+			aria-label="Toggle navigation menu"
+			aria-expanded={showMobileNav}
 		>
-			Grid
-		</button>
-		<button 
-			class="btn btn-secondary" 
-			onclick={() => goto('/saved')}
-			aria-label="View saved books"
-		>
-			Saved Books
-		</button>
-		<Tooltip text="Press ? to view all keyboard shortcuts">
-			<button 
-				class="btn btn-secondary" 
-				onclick={() => goto('/taste-profile')}
-				aria-label="View your taste profile"
+			<span>Menu</span>
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				class="h-5 w-5 transition-transform {showMobileNav ? 'rotate-180' : ''}"
+				fill="none"
+				viewBox="0 0 24 24"
+				stroke="currentColor"
+				aria-hidden="true"
 			>
-				Taste Profile
-			</button>
-		</Tooltip>
-		{#if recentlyViewed.length > 0}
-			<button 
-				class="btn btn-secondary" 
-				onclick={() => showRecentlyViewed = !showRecentlyViewed}
-				aria-label="Toggle recently viewed books"
-				aria-expanded={showRecentlyViewed}
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+			</svg>
+		</button>
+	</div>
+
+	<nav 
+		aria-label="View and navigation options" 
+		class="flex flex-col md:flex-row gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6 px-2 {showMobileNav ? '' : 'hidden md:flex'}"
+	>
+		<div class="flex gap-2 sm:gap-3 md:gap-4 flex-wrap">
+			<Tooltip text="Press ← → arrow keys to swipe (in swipe mode)">
+				<button
+					class="btn {viewMode === 'swipe' ? 'btn-primary' : 'btn-secondary'} text-sm md:text-base"
+					onclick={() => { viewMode = 'swipe'; showMobileNav = false; }}
+					aria-label="Switch to swipe view mode"
+					aria-pressed={viewMode === 'swipe'}
+				>
+					Swipe
+				</button>
+			</Tooltip>
+			<button
+				class="btn {viewMode === 'grid' ? 'btn-primary' : 'btn-secondary'} text-sm md:text-base"
+				onclick={() => { viewMode = 'grid'; showMobileNav = false; }}
+				aria-label="Switch to grid view mode"
+				aria-pressed={viewMode === 'grid'}
 			>
-				Recently Viewed ({recentlyViewed.length})
+				Grid
 			</button>
-		{/if}
+			<button 
+				class="btn btn-secondary text-sm md:text-base" 
+				onclick={() => { goto('/saved'); showMobileNav = false; }}
+				aria-label="View saved books"
+			>
+				<span class="hidden sm:inline">Saved Books</span>
+				<span class="sm:hidden">Saved</span>
+			</button>
+			<Tooltip text="Press ? to view all keyboard shortcuts">
+				<button 
+					class="btn btn-secondary text-sm md:text-base" 
+					onclick={() => { goto('/taste-profile'); showMobileNav = false; }}
+					aria-label="View your taste profile"
+				>
+					<span class="hidden sm:inline">Taste Profile</span>
+					<span class="sm:hidden">Profile</span>
+				</button>
+			</Tooltip>
+			{#if recentlyViewed.length > 0}
+				<button 
+					class="btn btn-secondary text-sm md:text-base" 
+					onclick={() => { showRecentlyViewed = !showRecentlyViewed; showMobileNav = false; }}
+					aria-label="Toggle recently viewed books"
+					aria-expanded={showRecentlyViewed}
+				>
+					<span class="hidden sm:inline">Recently Viewed ({recentlyViewed.length})</span>
+					<span class="sm:hidden">Recent ({recentlyViewed.length})</span>
+				</button>
+			{/if}
+		</div>
 		{#if allBooks.length > 0}
-			<button
-				class="btn {paginationMode === 'load-more' ? 'btn-primary' : 'btn-secondary'}"
-				onclick={() => paginationMode = 'load-more'}
-				aria-label="Switch to load more pagination mode. Click 'Load More' button to see additional results"
-				aria-pressed={paginationMode === 'load-more'}
-			>
-				Mode: Load More
-			</button>
-			<button
-				class="btn {paginationMode === 'infinite-scroll' ? 'btn-primary' : 'btn-secondary'}"
-				onclick={() => paginationMode = 'infinite-scroll'}
-				aria-label="Switch to infinite scroll pagination mode. Automatically loads more as you scroll down"
-				aria-pressed={paginationMode === 'infinite-scroll'}
-			>
-				Mode: Auto Scroll
-			</button>
-			<button
-				class="btn {paginationMode === 'pages' ? 'btn-primary' : 'btn-secondary'}"
-				onclick={() => paginationMode = 'pages'}
-				aria-label="Switch to page number pagination mode"
-				aria-pressed={paginationMode === 'pages'}
-			>
-				Mode: Pages
-			</button>
+			<div class="flex gap-2 sm:gap-3 md:gap-4 flex-wrap">
+				<button
+					class="btn {paginationMode === 'load-more' ? 'btn-primary' : 'btn-secondary'} text-xs sm:text-sm md:text-base"
+					onclick={() => { paginationMode = 'load-more'; showMobileNav = false; }}
+					aria-label="Switch to load more pagination mode. Click 'Load More' button to see additional results"
+					aria-pressed={paginationMode === 'load-more'}
+				>
+					<span class="hidden md:inline">Mode: Load More</span>
+					<span class="md:hidden">Load More</span>
+				</button>
+				<button
+					class="btn {paginationMode === 'infinite-scroll' ? 'btn-primary' : 'btn-secondary'} text-xs sm:text-sm md:text-base"
+					onclick={() => { paginationMode = 'infinite-scroll'; showMobileNav = false; }}
+					aria-label="Switch to infinite scroll pagination mode. Automatically loads more as you scroll down"
+					aria-pressed={paginationMode === 'infinite-scroll'}
+				>
+					<span class="hidden md:inline">Mode: Auto Scroll</span>
+					<span class="md:hidden">Auto</span>
+				</button>
+				<button
+					class="btn {paginationMode === 'pages' ? 'btn-primary' : 'btn-secondary'} text-xs sm:text-sm md:text-base"
+					onclick={() => { paginationMode = 'pages'; showMobileNav = false; }}
+					aria-label="Switch to page number pagination mode"
+					aria-pressed={paginationMode === 'pages'}
+				>
+					<span class="hidden md:inline">Mode: Pages</span>
+					<span class="md:hidden">Pages</span>
+				</button>
+			</div>
 		{/if}
 	</nav>
 
@@ -474,7 +561,7 @@
 					</div>
 					{#if ResultsGridComponent}
 						{@const ResultsGrid = ResultsGridComponent}
-						<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+						<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
 							{#each recentlyViewed as rv (rv.book.id)}
 								<div class="card relative group">
 									<button
@@ -496,7 +583,7 @@
 					{/if}
 				</section>
 			{/if}
-			<div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+			<div class="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
 				<div class="lg:col-span-1">
 					<TasteProfile 
 						history={searchHistory} 
@@ -510,6 +597,11 @@
 						preferences={filterPreferences}
 						onPreferencesChange={handleFilterPreferencesChange}
 					/>
+					{#if allBooks.length > 0 && books.length !== allBooks.length}
+						<div class="mb-4 text-sm text-academia-cream/70" role="status" aria-live="polite">
+							Showing {books.length} of {allBooks.length} {allBooks.length === 1 ? 'book' : 'books'}
+						</div>
+					{/if}
 					{#if books.length === 0}
 						<div class="card text-center py-8" role="status" aria-live="polite">
 							<p class="text-academia-cream/60 text-lg mb-2">
@@ -665,7 +757,7 @@
 	<!-- Back to Top Button -->
 	{#if showBackToTop}
 		<button
-			class="fixed bottom-8 right-8 btn btn-primary rounded-full w-12 h-12 p-0 shadow-lg z-50 focus:outline-2 focus:outline-offset-2 focus:outline-academia-gold"
+			class="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 btn btn-primary rounded-full w-10 h-10 sm:w-12 sm:h-12 p-0 shadow-lg z-50 focus:outline-2 focus:outline-offset-2 focus:outline-academia-gold text-lg sm:text-xl"
 			onclick={scrollToTop}
 			aria-label="Scroll back to top of page"
 		>

@@ -47,6 +47,7 @@ class BookResponse(BaseModel):
     authors: List[str] = Field(..., description="List of author names")
     first_publish_year: Optional[int] = Field(None, description="First publication year")
     subjects: List[str] = Field(..., description="Subject tags/categories")
+    cover_url: Optional[str] = Field(None, description="Open Library cover image URL (medium size)")
     similarity: float = Field(
         ...,
         ge=0.0,
@@ -63,6 +64,7 @@ class BookResponse(BaseModel):
                 "authors": ["Gillian Flynn"],
                 "first_publish_year": 2012,
                 "subjects": ["Fiction", "Thrillers", "Psychological"],
+                "cover_url": "https://covers.openlibrary.org/b/olid/OL123456W-M.jpg",
                 "similarity": 0.85
             }
         }
@@ -78,6 +80,7 @@ class BookDetailResponse(BaseModel):
     authors: List[str] = Field(..., description="List of author names")
     first_publish_year: Optional[int] = Field(None, description="First publication year")
     subjects: List[str] = Field(..., description="Subject tags/categories")
+    cover_url: Optional[str] = Field(None, description="Open Library cover image URL (medium size)")
     search_content: Optional[str] = Field(None, description="Search content used for embedding")
     
     model_config = {
@@ -89,6 +92,7 @@ class BookDetailResponse(BaseModel):
                 "authors": ["Gillian Flynn"],
                 "first_publish_year": 2012,
                 "subjects": ["Fiction", "Thrillers", "Psychological"],
+                "cover_url": "https://covers.openlibrary.org/b/olid/OL123456W-M.jpg",
                 "search_content": "Gone Girl. Fiction Thrillers Psychological"
             }
         }

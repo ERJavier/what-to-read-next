@@ -42,8 +42,32 @@
 	let hasError = $state(false);
 	let supportsWebP = $state<boolean | null>(null);
 
-	// Normalize src to ImageSource array format
-	const normalizedSources = $derived(() => {
+	// Generate srcset for responsive images
+	function generateSrcset(baseUrl: string, sizesAttr: string): string {
+		// Extract width descriptors from sizes attribute
+		// Simple implementation: create common responsive breakpoints
+		const widths = [320, 640, 768, 1024, 1280, 1920];
+		
+		// If baseUrl contains Open Library covers, use their size parameters
+		if (baseUrl.includes('covers.openlibrary.org')) {
+			// Open Library uses size suffixes: S, M, L
+			return [
+				baseUrl.replace(/-[SML]\.jpg$/, '-S.jpg') + ' 160w',
+				baseUrl.replace(/-[SML]\.jpg$/, '-M.jpg') + ' 480w',
+				baseUrl.replace(/-[SML]\.jpg$/, '-L.jpg') + ' 768w'
+			].join(', ');
+		}
+		
+		// For other URLs, append width parameters (common pattern)
+		// This is a simplified version - actual implementation may vary by CDN
+		return widths
+			.filter(w => w <= 1920) // Reasonable max
+			.map(w => `${baseUrl}?w=${w} ${w}w`)
+			.join(', ');
+	}
+
+	// Normalize src to ImageSource array format - computed reactively
+	const normalizedSources = $derived.by(() => {
 		if (Array.isArray(src)) {
 			return src;
 		}
@@ -74,30 +98,6 @@
 		}];
 	});
 
-	// Generate srcset for responsive images
-	function generateSrcset(baseUrl: string, sizesAttr: string): string {
-		// Extract width descriptors from sizes attribute
-		// Simple implementation: create common responsive breakpoints
-		const widths = [320, 640, 768, 1024, 1280, 1920];
-		
-		// If baseUrl contains Open Library covers, use their size parameters
-		if (baseUrl.includes('covers.openlibrary.org')) {
-			// Open Library uses size suffixes: S, M, L
-			return [
-				baseUrl.replace(/-[SML]\.jpg$/, '-S.jpg') + ' 160w',
-				baseUrl.replace(/-[SML]\.jpg$/, '-M.jpg') + ' 480w',
-				baseUrl.replace(/-[SML]\.jpg$/, '-L.jpg') + ' 768w'
-			].join(', ');
-		}
-		
-		// For other URLs, append width parameters (common pattern)
-		// This is a simplified version - actual implementation may vary by CDN
-		return widths
-			.filter(w => w <= 1920) // Reasonable max
-			.map(w => `${baseUrl}?w=${w} ${w}w`)
-			.join(', ');
-	}
-
 	// Check WebP support
 	onMount(() => {
 		if (typeof window === 'undefined') return;
@@ -113,24 +113,25 @@
 		supportsWebP = webpSupported();
 	});
 
-	// Initialize with placeholder if provided
+	// Update imageSources when normalizedSources changes, but only sync state when needed
 	$effect(() => {
-		const placeholderValue = placeholder; // Capture current value
-		if (placeholderValue && !isLoaded && !imageSrc) {
-			imageSrc = placeholderValue;
+		const sources = normalizedSources;
+		// Only update imageSources if it's actually different (avoid unnecessary updates)
+		if (JSON.stringify(sources) !== JSON.stringify(imageSources)) {
+			imageSources = sources;
+		}
+		
+		// Set initial src for immediate rendering if not already set
+		if (sources.length > 0 && !isLoaded && !imageSrc && !placeholder) {
+			const fallbackSrc = sources[sources.length - 1].src;
+			imageSrc = fallbackSrc;
 		}
 	});
-	
-	// Update image sources when src changes
+
+	// Initialize with placeholder if provided - only once
 	$effect(() => {
-		imageSources = normalizedSources();
-		// Set initial src for immediate rendering
-		if (imageSources.length > 0) {
-			// Use fallback (last) source as initial src
-			const fallbackSrc = imageSources[imageSources.length - 1].src;
-			if (!isLoaded && !imageSrc && !placeholder) {
-				imageSrc = fallbackSrc;
-			}
+		if (placeholder && !isLoaded && !imageSrc) {
+			imageSrc = placeholder;
 		}
 	});
 
@@ -138,54 +139,64 @@
 		if (typeof window === 'undefined' || !containerElement) return;
 
 		// Use Intersection Observer for lazy loading (more control than native)
+		// Optimized with better threshold and rootMargin
 		const observer = new IntersectionObserver(
 			(entries) => {
-					entries.forEach((entry) => {
-						if (entry.isIntersecting) {
-							isInView = true;
-							// Start loading the image
-							if (!isLoaded && imageSources.length > 0 && !hasError) {
-								// Use the first source (WebP if available and supported, or fallback)
-								const sourceToLoad = supportsWebP && imageSources.length > 1 
-									? imageSources[0] 
-									: imageSources[imageSources.length - 1];
-								
-								const img = new Image();
-								img.onload = () => {
-									imageSrc = sourceToLoad.src;
-									isLoaded = true;
-									hasError = false;
-								};
-								img.onerror = () => {
-									// If WebP fails, try fallback
-									if (supportsWebP && imageSources.length > 1 && sourceToLoad === imageSources[0]) {
-										const fallback = imageSources[imageSources.length - 1];
-										const fallbackImg = new Image();
-										fallbackImg.onload = () => {
-											imageSrc = fallback.src;
-											isLoaded = true;
-											hasError = false;
-										};
-										fallbackImg.onerror = () => {
-											hasError = true;
-											isLoaded = false;
-										};
-										fallbackImg.src = fallback.src;
-									} else {
+				entries.forEach((entry) => {
+					if (entry.isIntersecting) {
+						isInView = true;
+						// Start loading the image
+						if (!isLoaded && imageSources.length > 0 && !hasError) {
+							// Use the first source (WebP if available and supported, or fallback)
+							const sourceToLoad = supportsWebP && imageSources.length > 1 
+								? imageSources[0] 
+								: imageSources[imageSources.length - 1];
+							
+							const img = new Image();
+							
+							// Set fetch priority for better loading performance
+							if ('fetchPriority' in img) {
+								(img as any).fetchPriority = isInView ? 'high' : 'low';
+							}
+							
+							img.onload = () => {
+								imageSrc = sourceToLoad.src;
+								isLoaded = true;
+								hasError = false;
+							};
+							img.onerror = () => {
+								// If WebP fails, try fallback
+								if (supportsWebP && imageSources.length > 1 && sourceToLoad === imageSources[0]) {
+									const fallback = imageSources[imageSources.length - 1];
+									const fallbackImg = new Image();
+									fallbackImg.onload = () => {
+										imageSrc = fallback.src;
+										isLoaded = true;
+										hasError = false;
+									};
+									fallbackImg.onerror = () => {
 										hasError = true;
 										isLoaded = false;
-									}
-								};
-								img.src = sourceToLoad.src;
-							}
+									};
+									fallbackImg.src = fallback.src;
+								} else {
+									hasError = true;
+									isLoaded = false;
+								}
+							};
+							img.src = sourceToLoad.src;
+						}
+						// Once loaded, we can unobserve to save resources
+						if (isLoaded || hasError) {
 							observer.unobserve(containerElement!);
 						}
-					});
+					}
+				});
 			},
 			{
 				root: null,
-				rootMargin: '50px', // Start loading 50px before image comes into view
-				threshold: 0.01
+				rootMargin: '100px', // Start loading 100px before image comes into view (increased for better perceived performance)
+				threshold: [0, 0.01, 0.1] // Multiple thresholds for better granularity
 			}
 		);
 

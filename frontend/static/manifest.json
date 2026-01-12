@@ -1,0 +1,42 @@
+{
+	"name": "WhatToRead - Discover Your Next Book",
+	"short_name": "WhatToRead",
+	"description": "Discover your next favorite book through semantic search",
+	"start_url": "/",
+	"display": "standalone",
+	"background_color": "#1a1a1a",
+	"theme_color": "#c9a961",
+	"orientation": "portrait-primary",
+	"icons": [
+		{
+			"src": "/favicon.png",
+			"sizes": "any",
+			"type": "image/svg+xml",
+			"purpose": "any maskable"
+		}
+	],
+	"categories": ["books", "education", "entertainment"],
+	"shortcuts": [
+		{
+			"name": "Search Books",
+			"short_name": "Search",
+			"description": "Search for books",
+			"url": "/",
+			"icons": [{ "src": "/favicon.png", "sizes": "any" }]
+		},
+		{
+			"name": "Saved Books",
+			"short_name": "Saved",
+			"description": "View your saved books",
+			"url": "/saved",
+			"icons": [{ "src": "/favicon.png", "sizes": "any" }]
+		},
+		{
+			"name": "Taste Profile",
+			"short_name": "Profile",
+			"description": "View your reading taste profile",
+			"url": "/taste-profile",
+			"icons": [{ "src": "/favicon.png", "sizes": "any" }]
+		}
+	]
+}

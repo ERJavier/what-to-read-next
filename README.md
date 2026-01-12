@@ -1,6 +1,10 @@
 # WhatToRead
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Python Tests](https://github.com/ERJavier/what-to-read-next/actions/workflows/python-tests.yml/badge.svg)](https://github.com/ERJavier/what-to-read-next/actions/workflows/python-tests.yml)
+[![Frontend Tests](https://github.com/ERJavier/what-to-read-next/actions/workflows/frontend-tests.yml/badge.svg)](https://github.com/ERJavier/what-to-read-next/actions/workflows/frontend-tests.yml)
+[![Lint and Format](https://github.com/ERJavier/what-to-read-next/actions/workflows/lint-format.yml/badge.svg)](https://github.com/ERJavier/what-to-read-next/actions/workflows/lint-format.yml)
+[![Docker Build](https://github.com/ERJavier/what-to-read-next/actions/workflows/docker-build.yml/badge.svg)](https://github.com/ERJavier/what-to-read-next/actions/workflows/docker-build.yml)
 
 An open-source, high-performance recommendation engine designed to navigate the "long tail" of literature. Unlike traditional bestseller lists or collaborative filters that recommend only what is popular, WhatToRead uses Vector Semantics to match readers with books based on obscure themes, moods, and specific settings—derived from the massive Open Library dataset.
 

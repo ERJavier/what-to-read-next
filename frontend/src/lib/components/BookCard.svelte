@@ -14,10 +14,25 @@
 	let { book, onSwipeLeft, onSwipeRight, onClick, showCover = true }: Props = $props();
 	
 	// Generate optimized book cover URLs with responsive srcset
+	// Use cover_url from API if available, otherwise generate from ol_key
 	const bookCoverImageSource = $derived.by(() => {
 		if (!showCover || !book.ol_key) return null;
 		
-		// Return ImageSource format with srcset for responsive loading
+		// Use cover_url from API response if available
+		if (book.cover_url) {
+			// Generate srcset from the cover_url (replace -M.jpg with size variants)
+			const baseUrl = book.cover_url.replace(/-M\.jpg$/, '');
+			return {
+				src: book.cover_url, // Medium size from API
+				srcset: [
+					`${baseUrl}-S.jpg 160w`,
+					`${baseUrl}-M.jpg 480w`,
+					`${baseUrl}-L.jpg 768w`
+				].join(', ')
+			};
+		}
+		
+		// Fallback: Generate from ol_key (backward compatibility)
 		return {
 			src: getOpenLibraryCoverUrl(book.ol_key, 'M'), // Default medium size
 			srcset: getOpenLibraryCoverSrcset(book.ol_key)
@@ -103,7 +118,7 @@
 				src={[bookCoverImageSource]}
 				alt={`Cover for ${book.title}`}
 				placeholder={bookCoverPlaceholder || undefined}
-				sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+				sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
 				width="100%"
 				height="100%"
 				class="w-full h-full"
@@ -112,7 +127,7 @@
 		</div>
 	{/if}
 	
-	<h2 class="text-2xl font-serif font-bold text-academia-gold mb-3 leading-tight line-clamp-2">
+	<h2 class="text-xl sm:text-2xl font-serif font-bold text-academia-gold mb-2 sm:mb-3 leading-tight line-clamp-2">
 		{book.title}
 	</h2>
 	
