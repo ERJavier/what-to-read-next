@@ -1,0 +1,52 @@
+# Build stage
+FROM node:20-slim AS builder
+
+WORKDIR /app
+
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+# Copy package files
+COPY frontend/package.json frontend/pnpm-lock.yaml* ./
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Copy frontend source
+COPY frontend/ ./
+
+# Build argument for API URL (used at build time for client-side code)
+ARG VITE_API_URL=http://localhost:8001
+
+# Build the application
+ENV VITE_API_URL=${VITE_API_URL}
+RUN pnpm build
+
+# Production stage
+FROM node:20-slim
+
+WORKDIR /app
+
+# Copy package files
+COPY frontend/package.json frontend/pnpm-lock.yaml* ./
+
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+# Install only production dependencies
+RUN pnpm install --prod --frozen-lockfile
+
+# Copy built application from builder stage
+COPY --from=builder /app/build ./build
+COPY --from=builder /app/package.json ./
+
+# Expose port (default SvelteKit adapter-node port)
+EXPOSE 3000
+
+# Set environment to production
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV HOST=0.0.0.0
+
+# Start the application
+CMD ["node", "build"]

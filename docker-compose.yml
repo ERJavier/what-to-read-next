@@ -52,6 +52,32 @@ services:
     restart: unless-stopped
     command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
 
+  # Frontend Application (SvelteKit)
+  whattoread-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        # VITE_API_URL is used at build time for client-side code
+        # Client-side code runs in browser, so it needs the public API URL
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8001}
+    container_name: whattoread-frontend
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOST: 0.0.0.0
+      # API_URL is used at runtime for server-side hooks (hooks.server.ts)
+      # Server-side code runs in container, so it uses internal Docker network
+      API_URL: ${API_URL:-http://whattoread-api:8000}
+    ports:
+      - "3000:3000"
+    depends_on:
+      whattoread-api:
+        condition: service_started
+    networks:
+      - whattoread-network
+    restart: unless-stopped
+
   # ETL Service (for running data ingestion)
   whattoread-etl:
     build:
