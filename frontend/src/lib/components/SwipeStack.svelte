@@ -3,6 +3,7 @@
 	import type { Book } from '../types';
 	import BookCard from './BookCard.svelte';
 	import { preloadBookCovers } from '../imagePreloader';
+	import { isSwipeHintDismissed, dismissSwipeHint } from '../storage';
 
 	interface Props {
 		books: Book[];
@@ -16,6 +17,12 @@
 	let currentIndex = $state(0);
 	let swipeDirection = $state<'left' | 'right' | null>(null);
 	let showFeedback = $state(false);
+	let hintDismissed = $state(isSwipeHintDismissed());
+	
+	function handleDismissHint() {
+		hintDismissed = true;
+		dismissSwipeHint();
+	}
 	
 	// Memoize visible books to avoid recreating array on every render
 	const visibleBooks = $derived.by(() => {
@@ -131,7 +138,7 @@
 	{/if}
 
 	<!-- Swipe Hint -->
-	{#if visibleBooks.length > 0 && currentIndex === 0 && !showFeedback}
+	{#if visibleBooks.length > 0 && currentIndex === 0 && !showFeedback && !hintDismissed}
 		<div class="absolute bottom-4 left-1/2 -translate-x-1/2 z-40 bg-academia-dark/80 backdrop-blur-sm rounded-full px-4 py-2 border border-academia-lighter flex items-center gap-3 text-xs text-academia-cream/70">
 			<span class="flex items-center gap-1">
 				<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
@@ -146,6 +153,15 @@
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
 				</svg>
 			</span>
+			<button
+				class="ml-2 hover:text-academia-cream transition-colors focus:outline-none focus:ring-2 focus:ring-academia-gold rounded"
+				onclick={handleDismissHint}
+				aria-label="Dismiss swipe hint"
+			>
+				<svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+				</svg>
+			</button>
 		</div>
 	{/if}
 

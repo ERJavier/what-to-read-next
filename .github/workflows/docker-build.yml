@@ -25,6 +25,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
       matrix:
         dockerfile:
@@ -43,11 +44,12 @@ jobs:
 
       - name: Build Docker image
         uses: docker/build-push-action@v5
-        timeout-minutes: 30
         with:
           context: ${{ matrix.dockerfile.context }}
           file: ${{ matrix.dockerfile.file }}
           push: false
+          load: true
+          platforms: linux/amd64
           tags: whattoread-${{ matrix.dockerfile.name }}:test
           cache-from: type=gha
           cache-to: type=gha,mode=max

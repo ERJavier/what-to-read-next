@@ -293,3 +293,29 @@ export function printSavedBooks(): void {
 		printWindow.close();
 	}, 250);
 }
+
+/**
+ * Check if swipe hint should be shown (not dismissed)
+ */
+const SWIPE_HINT_DISMISSED_KEY = 'whattoread_swipe_hint_dismissed';
+
+export function isSwipeHintDismissed(): boolean {
+	if (!browser) return false;
+	try {
+		return localStorage.getItem(SWIPE_HINT_DISMISSED_KEY) === 'true';
+	} catch {
+		return false;
+	}
+}
+
+/**
+ * Mark swipe hint as dismissed
+ */
+export function dismissSwipeHint(): void {
+	if (!browser) return;
+	try {
+		localStorage.setItem(SWIPE_HINT_DISMISSED_KEY, 'true');
+	} catch (e) {
+		console.error('Error dismissing swipe hint:', e);
+	}
+}

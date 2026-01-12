@@ -110,6 +110,14 @@
 		preferences.sortDirection !== 'desc'
 	);
 	
+	let activeFilterCount = $derived.by(() => {
+		let count = 0;
+		if (preferences.selectedSubjects.length > 0) count += preferences.selectedSubjects.length;
+		if (preferences.yearRange.min !== null || preferences.yearRange.max !== null) count += 1;
+		if (preferences.sortBy !== 'similarity' || preferences.sortDirection !== 'desc') count += 1;
+		return count;
+	});
+	
 	let isExpanded = $state(false);
 	let isMobile = $state(false);
 	
@@ -144,7 +152,14 @@
 			aria-label={isExpanded ? 'Collapse filters' : 'Expand filters'}
 			aria-expanded={isExpanded}
 		>
-			<span class="text-lg font-semibold text-academia-cream">Filters</span>
+			<div class="flex items-center gap-2">
+				<span class="text-lg font-semibold text-academia-cream">Filters</span>
+				{#if activeFilterCount > 0}
+					<span class="px-2 py-0.5 bg-academia-gold text-academia-dark text-xs font-semibold rounded-full min-w-[1.5rem] text-center" aria-label="{activeFilterCount} active {activeFilterCount === 1 ? 'filter' : 'filters'}">
+						{activeFilterCount}
+					</span>
+				{/if}
+			</div>
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
 				class="h-5 w-5 text-academia-cream transition-transform {isExpanded ? 'rotate-180' : ''}"

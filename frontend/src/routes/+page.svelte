@@ -597,6 +597,11 @@
 						preferences={filterPreferences}
 						onPreferencesChange={handleFilterPreferencesChange}
 					/>
+					{#if allBooks.length > 0 && books.length !== allBooks.length}
+						<div class="mb-4 text-sm text-academia-cream/70" role="status" aria-live="polite">
+							Showing {books.length} of {allBooks.length} {allBooks.length === 1 ? 'book' : 'books'}
+						</div>
+					{/if}
 					{#if books.length === 0}
 						<div class="card text-center py-8" role="status" aria-live="polite">
 							<p class="text-academia-cream/60 text-lg mb-2">
