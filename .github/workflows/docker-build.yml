@@ -43,6 +43,7 @@ jobs:
 
       - name: Build Docker image
         uses: docker/build-push-action@v5
+        timeout-minutes: 30
         with:
           context: ${{ matrix.dockerfile.context }}
           file: ${{ matrix.dockerfile.file }}
