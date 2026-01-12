@@ -47,6 +47,11 @@ class Settings(BaseSettings):
     similarity_threshold: float = 0.4  # Cosine distance threshold (lower = more strict, 0.4 = ~0.6 similarity)
     max_recommendations: int = 100
     
+    # Rate limiting
+    rate_limit_enabled: bool = True
+    rate_limit_per_minute: int = 100  # Requests per minute per IP
+    rate_limit_per_hour: int = 1000  # Requests per hour per IP
+    
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

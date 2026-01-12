@@ -170,9 +170,43 @@ curl http://localhost:8000/books/12345
 
 ## Rate Limiting
 
-Rate limiting will be implemented in a future release. Current limits:
-- **Development**: No limits
-- **Production**: TBD
+Rate limiting is enabled to protect the API from abuse and ensure fair usage.
+
+**Limits:**
+- **Per IP Address**: 100 requests per minute
+- **Per IP Address**: 1000 requests per hour
+
+**Rate Limit Exceeded Response:**
+
+When the rate limit is exceeded, the API returns a `429 Too Many Requests` status code:
+
+```json
+{
+  "detail": "Rate limit exceeded: 100 per 1 minute"
+}
+```
+
+**Rate Limit Headers:**
+
+Responses include rate limit information in headers:
+- `X-RateLimit-Limit`: Maximum number of requests allowed
+- `X-RateLimit-Remaining`: Number of requests remaining in the current window
+- `X-RateLimit-Reset`: Time when the rate limit resets (Unix timestamp)
+
+**Configuration:**
+
+Rate limiting can be configured via environment variables:
+- `RATE_LIMIT_ENABLED`: Enable/disable rate limiting (default: `true`)
+- `RATE_LIMIT_PER_MINUTE`: Requests per minute per IP (default: `100`)
+- `RATE_LIMIT_PER_HOUR`: Requests per hour per IP (default: `1000`)
+
+**Exempt Endpoints:**
+
+The following endpoints are exempt from rate limiting:
+- `GET /health`: Health check endpoint
+- `GET /`: Root endpoint
+- `GET /docs`: API documentation
+- `GET /redoc`: Alternative API documentation
 
 ## Error Handling
 

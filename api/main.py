@@ -10,6 +10,10 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+from slowapi.util import get_remote_address
 
 from api.author_enrichment import close_http_client, enrich_author_names
 from api.cover_enrichment import get_cover_url
@@ -33,6 +37,21 @@ from api.queries import get_book_by_id, search_similar_books
 # Setup logging
 setup_logging(settings.log_level, settings.log_file)
 logger = logging.getLogger(__name__)
+
+# Initialize rate limiter (only if rate limiting is enabled)
+limiter = None
+if settings.rate_limit_enabled:
+    # Use application-wide limits (applies to all endpoints)
+    limiter = Limiter(
+        key_func=get_remote_address,
+        application_limits=[f"{settings.rate_limit_per_minute}/minute", f"{settings.rate_limit_per_hour}/hour"]
+    )
+    logger.info(
+        f"Rate limiting enabled: {settings.rate_limit_per_minute} req/min, "
+        f"{settings.rate_limit_per_hour} req/hour per IP"
+    )
+else:
+    logger.info("Rate limiting disabled")
 
 
 @asynccontextmanager
@@ -92,6 +111,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Rate limiting middleware (add after CORS, before logging)
+if settings.rate_limit_enabled and limiter:
+    app.state.limiter = limiter
+    app.add_middleware(SlowAPIMiddleware)
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+    logger.info("Rate limiting middleware added")
 
 # Request logging middleware (add after CORS so it logs all requests)
 app.add_middleware(RequestLoggingMiddleware)
@@ -215,7 +241,7 @@ async def root():
 
 
 @app.post("/recommend", response_model=list[BookResponse], tags=["Recommendations"])
-async def get_recommendations(request: RecommendationRequest):
+async def get_recommendations(request: Request, body: RecommendationRequest):
     """
     Get book recommendations based on a semantic query.
     
@@ -239,26 +265,26 @@ async def get_recommendations(request: RecommendationRequest):
     async with track_performance("/recommend", "POST") as metric:
         try:
             # Check cache first
-            cached_result = get_cached_recommendation(request.query, request.limit)
+            cached_result = get_cached_recommendation(body.query, body.limit)
             if cached_result is not None:
-                logger.debug(f"Cache hit for recommendation query: {request.query[:50]}...")
+                logger.debug(f"Cache hit for recommendation query: {body.query[:50]}...")
                 metric.status_code = 200
                 return cached_result
             
             # Encode the query into an embedding vector
-            logger.info(f"Processing recommendation request: query='{request.query[:50]}...', limit={request.limit}")
-            query_embedding = encode_query(request.query)
+            logger.info(f"Processing recommendation request: query='{body.query[:50]}...', limit={body.limit}")
+            query_embedding = encode_query(body.query)
             
             # Search for similar books
             results = await search_similar_books(
                 query_embedding=query_embedding,
-                limit=request.limit
+                limit=body.limit
             )
             
             if not results:
                 logger.info("No books found matching the query")
                 empty_result = []
-                set_cached_recommendation(request.query, request.limit, empty_result)
+                set_cached_recommendation(body.query, body.limit, empty_result)
                 metric.status_code = 200
                 return empty_result
             
@@ -289,7 +315,7 @@ async def get_recommendations(request: RecommendationRequest):
                 ))
             
             # Cache the result
-            set_cached_recommendation(request.query, request.limit, books)
+            set_cached_recommendation(body.query, body.limit, books)
             
             logger.info(f"Returning {len(books)} recommendations")
             metric.status_code = 200
